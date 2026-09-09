@@ -48,12 +48,19 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 shrink-0">
-            <div className="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">A</span>
+            <img src="/logo.png" alt="Avelora Logo" className="h-10 w-auto object-contain" onError={(e) => {
+              // Fallback if logo not yet uploaded
+              e.currentTarget.style.display = 'none';
+              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+            }} />
+            <div className="hidden flex items-center gap-2">
+              <div className="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">A</span>
+              </div>
+              <span className="text-lg font-bold text-neutral-900 tracking-tight">
+                Avelora
+              </span>
             </div>
-            <span className="text-lg font-bold text-neutral-900 tracking-tight">
-              Avelora
-            </span>
           </Link>
 
           {/* Desktop Nav */}
