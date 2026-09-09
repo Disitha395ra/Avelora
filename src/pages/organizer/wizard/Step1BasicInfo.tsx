@@ -27,6 +27,16 @@ interface Props {
   onValid: (v: boolean) => void;
 }
 
+const getPreviewUrl = (url: string) => {
+  if (!url) return '';
+  // Convert Google Drive sharing links to direct image links
+  const driveMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (driveMatch) {
+    return `https://drive.google.com/uc?id=${driveMatch[1]}`;
+  }
+  return url;
+};
+
 export function Step1BasicInfo({ data, updateData, onValid }: Props) {
   const { register, watch, formState: { errors } } = useForm({
     defaultValues: {
@@ -113,14 +123,23 @@ export function Step1BasicInfo({ data, updateData, onValid }: Props) {
             className="w-full h-10 px-3 text-sm text-neutral-900 bg-white border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 hover:border-neutral-300 transition-colors"
           />
           {data.cover_image_url && (
-            <img
-              src={data.cover_image_url}
-              alt="Cover preview"
-              className="mt-2 w-full h-40 object-cover rounded-lg border border-neutral-200"
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-            />
+            <div className="relative w-full h-40 mt-2 bg-neutral-100 rounded-lg border border-neutral-200 overflow-hidden group">
+              <img
+                src={getPreviewUrl(data.cover_image_url)}
+                alt="Cover preview"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const parent = target.parentElement;
+                  if (parent) {
+                    parent.innerHTML = '<div class="w-full h-full flex flex-col items-center justify-center text-neutral-400 p-4 text-center"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><p class="text-sm font-medium">Image preview not available</p><p class="text-xs mt-1 max-w-[250px]">The link might be private, broken, or not direct image file.</p></div>';
+                  }
+                }}
+              />
+            </div>
           )}
-          <p className="text-xs text-neutral-500">Recommended: 1400×600px, JPG or PNG. Use Unsplash for free images.</p>
+          <p className="text-xs text-neutral-500">Recommended: 1400×600px, JPG or PNG. Google Drive links are supported.</p>
         </div>
       </div>
     </div>

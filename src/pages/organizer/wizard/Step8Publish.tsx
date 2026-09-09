@@ -27,6 +27,12 @@ export function Step8Publish({ data }: Props) {
     setPublishing(true);
 
     try {
+      const getDirectImageUrl = (url: string | null | undefined) => {
+        if (!url) return null;
+        const driveMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+        return driveMatch ? `https://drive.google.com/uc?id=${driveMatch[1]}` : url;
+      };
+
       // Create the event
       const { data: event, error: eventError } = await supabase
         .from('events')
@@ -39,7 +45,7 @@ export function Step8Publish({ data }: Props) {
           event_type: data.event_type,
           status: 'published',
           is_private: data.is_private,
-          cover_image_url: data.cover_image_url || null,
+          cover_image_url: getDirectImageUrl(data.cover_image_url),
           organizer_name: data.organizer_name,
           start_date: data.start_date,
           end_date: data.end_date,
