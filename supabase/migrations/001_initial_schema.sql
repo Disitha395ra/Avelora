@@ -27,7 +27,7 @@ CREATE TABLE profiles (
 -- EVENT CATEGORIES
 -- ============================================================
 CREATE TABLE event_categories (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   slug TEXT NOT NULL UNIQUE,
   icon TEXT,
@@ -39,7 +39,7 @@ CREATE TABLE event_categories (
 -- EVENTS
 -- ============================================================
 CREATE TABLE events (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   organizer_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   category_id UUID REFERENCES event_categories(id),
   title TEXT NOT NULL,
@@ -88,7 +88,7 @@ CREATE INDEX idx_events_start_date ON events(start_date);
 -- EVENT LOCATIONS
 -- ============================================================
 CREATE TABLE event_locations (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id UUID NOT NULL UNIQUE REFERENCES events(id) ON DELETE CASCADE,
   venue_name TEXT,
   address TEXT,
@@ -107,7 +107,7 @@ CREATE TABLE event_locations (
 -- EVENT SCHEDULES
 -- ============================================================
 CREATE TABLE event_schedules (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   description TEXT,
@@ -124,7 +124,7 @@ CREATE TABLE event_schedules (
 -- EVENT SPEAKERS
 -- ============================================================
 CREATE TABLE event_speakers (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   title TEXT,
@@ -141,7 +141,7 @@ CREATE TABLE event_speakers (
 -- EVENT SETTINGS (extra key-value config)
 -- ============================================================
 CREATE TABLE event_settings (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id UUID NOT NULL UNIQUE REFERENCES events(id) ON DELETE CASCADE,
   show_remaining_capacity BOOLEAN DEFAULT TRUE,
   enable_waitlist BOOLEAN DEFAULT FALSE,
@@ -153,7 +153,7 @@ CREATE TABLE event_settings (
 -- EVENT STAFF
 -- ============================================================
 CREATE TABLE event_staff (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
   user_id UUID REFERENCES profiles(id),
   invited_email TEXT NOT NULL,
@@ -168,7 +168,7 @@ CREATE TABLE event_staff (
 -- SEATING SECTIONS
 -- ============================================================
 CREATE TABLE seating_sections (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   label TEXT,
@@ -187,7 +187,7 @@ CREATE INDEX idx_sections_event ON seating_sections(event_id);
 -- SEATING ROWS
 -- ============================================================
 CREATE TABLE seating_rows (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   section_id UUID NOT NULL REFERENCES seating_sections(id) ON DELETE CASCADE,
   event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
   label TEXT NOT NULL,
@@ -199,7 +199,7 @@ CREATE TABLE seating_rows (
 -- SEATS
 -- ============================================================
 CREATE TABLE seats (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
   section_id UUID NOT NULL REFERENCES seating_sections(id) ON DELETE CASCADE,
   row_id UUID REFERENCES seating_rows(id),
@@ -225,7 +225,7 @@ CREATE INDEX idx_seats_section ON seats(section_id);
 -- TICKET TYPES
 -- ============================================================
 CREATE TABLE ticket_types (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   description TEXT,
@@ -247,7 +247,7 @@ CREATE INDEX idx_ticket_types_event ON ticket_types(event_id);
 -- BOOKINGS
 -- ============================================================
 CREATE TABLE bookings (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_reference TEXT NOT NULL UNIQUE,
   event_id UUID NOT NULL REFERENCES events(id),
   customer_id UUID NOT NULL REFERENCES profiles(id),
@@ -273,7 +273,7 @@ CREATE INDEX idx_bookings_reference ON bookings(booking_reference);
 -- BOOKING ITEMS
 -- ============================================================
 CREATE TABLE booking_items (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
   ticket_type_id UUID NOT NULL REFERENCES ticket_types(id),
   quantity INTEGER NOT NULL DEFAULT 1,
@@ -286,7 +286,7 @@ CREATE TABLE booking_items (
 -- BOOKING SEATS
 -- ============================================================
 CREATE TABLE booking_seats (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
   booking_item_id UUID NOT NULL REFERENCES booking_items(id),
   seat_id UUID NOT NULL REFERENCES seats(id),
@@ -298,7 +298,7 @@ CREATE TABLE booking_seats (
 -- ATTENDEES
 -- ============================================================
 CREATE TABLE attendees (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
   booking_item_id UUID NOT NULL REFERENCES booking_items(id),
   first_name TEXT NOT NULL,
@@ -313,7 +313,7 @@ CREATE TABLE attendees (
 -- PAYMENTS
 -- ============================================================
 CREATE TABLE payments (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_id UUID NOT NULL UNIQUE REFERENCES bookings(id),
   provider TEXT NOT NULL DEFAULT 'stripe',
   provider_payment_id TEXT,
@@ -331,7 +331,7 @@ CREATE TABLE payments (
 -- INVOICES
 -- ============================================================
 CREATE TABLE invoices (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   invoice_number TEXT NOT NULL UNIQUE,
   booking_id UUID NOT NULL UNIQUE REFERENCES bookings(id),
   customer_id UUID NOT NULL REFERENCES profiles(id),
@@ -347,7 +347,7 @@ CREATE TABLE invoices (
 -- TICKETS (digital tickets)
 -- ============================================================
 CREATE TABLE tickets (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   ticket_code TEXT NOT NULL UNIQUE,
   booking_id UUID NOT NULL REFERENCES bookings(id),
   booking_item_id UUID NOT NULL REFERENCES booking_items(id),
@@ -369,7 +369,7 @@ CREATE INDEX idx_tickets_event ON tickets(event_id);
 -- TICKET CHECKINS
 -- ============================================================
 CREATE TABLE ticket_checkins (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   ticket_id UUID NOT NULL REFERENCES tickets(id),
   checked_in_by UUID NOT NULL REFERENCES profiles(id),
   checked_in_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -381,7 +381,7 @@ CREATE TABLE ticket_checkins (
 -- REFUNDS
 -- ============================================================
 CREATE TABLE refunds (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_id UUID NOT NULL REFERENCES bookings(id),
   payment_id UUID NOT NULL REFERENCES payments(id),
   amount NUMERIC(10,2) NOT NULL,
@@ -397,7 +397,7 @@ CREATE TABLE refunds (
 -- DISCOUNT CODES
 -- ============================================================
 CREATE TABLE discount_codes (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
   code TEXT NOT NULL,
   discount_type TEXT NOT NULL CHECK (discount_type IN ('percentage','fixed')),
@@ -415,7 +415,7 @@ CREATE TABLE discount_codes (
 -- NOTIFICATIONS
 -- ============================================================
 CREATE TABLE notifications (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES profiles(id),
   type TEXT NOT NULL,
   title TEXT NOT NULL,
@@ -430,7 +430,7 @@ CREATE TABLE notifications (
 -- AUDIT LOGS
 -- ============================================================
 CREATE TABLE audit_logs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES profiles(id),
   action TEXT NOT NULL,
   table_name TEXT,
