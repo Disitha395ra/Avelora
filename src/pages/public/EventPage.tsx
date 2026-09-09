@@ -151,9 +151,9 @@ export default function EventPage() {
                       <p className="text-xs text-neutral-500">Organized by</p>
                       <p className="font-semibold text-neutral-900">{event.organizer_name}</p>
                     </div>
-                    <button className="ml-auto text-sm text-brand-600 hover:text-brand-700 font-medium">
-                      View Profile
-                    </button>
+                    <a href={`mailto:${event.contact_email || 'hello@avelora.com'}`} className="ml-auto text-sm text-brand-600 hover:text-brand-700 font-medium">
+                      Contact Organizer
+                    </a>
                   </div>
                 </div>
               )}
@@ -225,9 +225,15 @@ export default function EventPage() {
                             </div>
                             <span className="text-xs text-neutral-500 shrink-0">{remaining} left</span>
                           </div>
-                          <Button size="sm" onClick={() => setBookingOpen(true)}>
-                            Book Now
-                          </Button>
+                          {event.seating_type === 'reserved' ? (
+                            <Link to={`/event/${event.slug}/book`} state={{ event }}>
+                              <Button size="sm">Select Seats</Button>
+                            </Link>
+                          ) : (
+                            <Button size="sm" onClick={() => setBookingOpen(true)}>
+                              Book Now
+                            </Button>
+                          )}
                         </div>
                       </div>
                     );
@@ -273,64 +279,84 @@ export default function EventPage() {
                 <div className="bg-white border border-neutral-200 rounded-xl shadow-sm p-5">
                   <h3 className="font-semibold text-neutral-900 mb-4">Select Tickets</h3>
 
-                  <div className="space-y-3 mb-5">
-                    {event.ticket_types?.map((t: any) => {
-                      const remaining = t.quantity - (t.quantity_sold || 0);
-                      const qty = quantities[t.id] || 0;
-                      return (
-                        <div key={t.id} className="p-3 border border-neutral-200 rounded-lg">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm font-medium text-neutral-900">{t.name}</span>
-                            <span className="text-sm font-bold text-neutral-900">
-                              {formatCurrency(t.price, event.currency)}
-                            </span>
-                          </div>
-                          {remaining <= 20 && (
-                            <p className="text-xs text-orange-600 mb-2">Only {remaining} left!</p>
-                          )}
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => setQuantities(prev => ({ ...prev, [t.id]: Math.max(0, (prev[t.id] || 0) - 1) }))}
-                              className="w-7 h-7 rounded-md border border-neutral-200 flex items-center justify-center text-neutral-600 hover:bg-neutral-50 transition-colors"
-                              disabled={qty === 0}
-                            >
-                              −
-                            </button>
-                            <span className="w-6 text-center text-sm font-medium">{qty}</span>
-                            <button
-                              onClick={() => setQuantities(prev => ({ ...prev, [t.id]: Math.min(remaining, (prev[t.id] || 0) + 1) }))}
-                              className="w-7 h-7 rounded-md border border-neutral-200 flex items-center justify-center text-neutral-600 hover:bg-neutral-50 transition-colors"
-                              disabled={qty >= remaining}
-                            >
-                              +
-                            </button>
+                  {event.seating_type === 'reserved' ? (
+                    <div className="space-y-4">
+                      <p className="text-sm text-neutral-500 mb-4">
+                        This event uses reserved seating. You can choose your exact seats on the interactive map.
+                      </p>
+                      <Link to={`/event/${event.slug}/book`} state={{ event }}>
+                        <Button
+                          fullWidth
+                          size="lg"
+                          icon={<ArrowRight className="w-4 h-4" />}
+                          iconPosition="right"
+                        >
+                          Select Seats on Map
+                        </Button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-3 mb-5">
+                        {event.ticket_types?.map((t: any) => {
+                          const remaining = t.quantity - (t.quantity_sold || 0);
+                          const qty = quantities[t.id] || 0;
+                          return (
+                            <div key={t.id} className="p-3 border border-neutral-200 rounded-lg">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-sm font-medium text-neutral-900">{t.name}</span>
+                                <span className="text-sm font-bold text-neutral-900">
+                                  {formatCurrency(t.price, event.currency)}
+                                </span>
+                              </div>
+                              {remaining <= 20 && (
+                                <p className="text-xs text-orange-600 mb-2">Only {remaining} left!</p>
+                              )}
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => setQuantities(prev => ({ ...prev, [t.id]: Math.max(0, (prev[t.id] || 0) - 1) }))}
+                                  className="w-7 h-7 rounded-md border border-neutral-200 flex items-center justify-center text-neutral-600 hover:bg-neutral-50 transition-colors"
+                                  disabled={qty === 0}
+                                >
+                                  −
+                                </button>
+                                <span className="w-6 text-center text-sm font-medium">{qty}</span>
+                                <button
+                                  onClick={() => setQuantities(prev => ({ ...prev, [t.id]: Math.min(remaining, (prev[t.id] || 0) + 1) }))}
+                                  className="w-7 h-7 rounded-md border border-neutral-200 flex items-center justify-center text-neutral-600 hover:bg-neutral-50 transition-colors"
+                                  disabled={qty >= remaining}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Total */}
+                      {totalTickets > 0 && (
+                        <div className="mb-4 p-3 bg-neutral-50 rounded-lg">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-neutral-500">{totalTickets} ticket{totalTickets > 1 ? 's' : ''}</span>
+                            <span className="font-bold text-neutral-900">{formatCurrency(totalAmount, event.currency)}</span>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
+                      )}
 
-                  {/* Total */}
-                  {totalTickets > 0 && (
-                    <div className="mb-4 p-3 bg-neutral-50 rounded-lg">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-neutral-500">{totalTickets} ticket{totalTickets > 1 ? 's' : ''}</span>
-                        <span className="font-bold text-neutral-900">{formatCurrency(totalAmount, event.currency)}</span>
-                      </div>
-                    </div>
+                      <Link to={`/event/${event.slug}/book`} state={{ quantities, event }}>
+                        <Button
+                          fullWidth
+                          size="lg"
+                          disabled={totalTickets === 0}
+                          icon={<ArrowRight className="w-4 h-4" />}
+                          iconPosition="right"
+                        >
+                          {totalTickets === 0 ? 'Select Tickets' : 'Continue to Booking'}
+                        </Button>
+                      </Link>
+                    </>
                   )}
-
-                  <Link to={`/event/${event.slug}/book`} state={{ quantities, event }}>
-                    <Button
-                      fullWidth
-                      size="lg"
-                      disabled={totalTickets === 0}
-                      icon={<ArrowRight className="w-4 h-4" />}
-                      iconPosition="right"
-                    >
-                      {totalTickets === 0 ? 'Select Tickets' : 'Continue to Booking'}
-                    </Button>
-                  </Link>
 
                   <div className="mt-4 space-y-2">
                     {['Instant booking confirmation', 'Secure payment', 'Digital tickets delivered by email'].map((feat) => (

@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
-import { Plus, Eye, Edit, MoreHorizontal, Search } from 'lucide-react';
+import { Plus, Eye, Edit, Share2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { StatusBadge } from '@/components/ui/Badge';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
 import { supabase } from '@/lib/supabase/client';
+import toast from 'react-hot-toast';
+import { SITE_URL } from '@/utils';
 
 // Mock EVENTS removed
 
@@ -101,9 +103,18 @@ export default function MyEventsPage() {
                   <td className="px-4 py-3 text-sm font-semibold text-neutral-900">${revenue.toLocaleString()}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
-                      <Link to={`/event/${event.slug}`} className="p-1.5 text-neutral-400 hover:text-neutral-600 rounded-md hover:bg-neutral-100"><Eye className="w-4 h-4" /></Link>
-                      <Link to={`/organizer/events/${event.id}/edit`} className="p-1.5 text-neutral-400 hover:text-neutral-600 rounded-md hover:bg-neutral-100"><Edit className="w-4 h-4" /></Link>
-                      <button className="p-1.5 text-neutral-400 hover:text-neutral-600 rounded-md hover:bg-neutral-100"><MoreHorizontal className="w-4 h-4" /></button>
+                      <Link to={`/event/${event.slug}`} target="_blank" title="View Event" className="p-1.5 text-neutral-400 hover:text-brand-600 rounded-md hover:bg-brand-50"><Eye className="w-4 h-4" /></Link>
+                      <button onClick={() => toast('Edit feature coming soon!', { icon: '🚧' })} title="Edit Event" className="p-1.5 text-neutral-400 hover:text-brand-600 rounded-md hover:bg-brand-50"><Edit className="w-4 h-4" /></button>
+                      <button 
+                        title="Share Event"
+                        onClick={() => {
+                          navigator.clipboard.writeText(`${SITE_URL}/event/${event.slug}`);
+                          toast.success('Event link copied!');
+                        }}
+                        className="p-1.5 text-neutral-400 hover:text-brand-600 rounded-md hover:bg-brand-50"
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </td>
                 </tr>

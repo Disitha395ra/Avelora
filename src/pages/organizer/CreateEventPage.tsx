@@ -37,13 +37,23 @@ export interface WizardData {
   online_platform: string;
   // Step 4
   seating_type: 'general_admission' | 'reserved' | 'table' | 'custom';
-  seating_layout: Array<{
-    id: string;
-    name: string;
-    rows: number;
-    seatsPerRow: number;
-    price: number;
-  }>;
+  seating_layout: {
+    gridWidth: number;
+    gridHeight: number;
+    stage: { x: number; y: number; w: number; h: number } | null;
+    sections: Array<{
+      id: string;
+      name: string;
+      color: string;
+      price: number;
+    }>;
+    cells: Array<{
+      x: number;
+      y: number;
+      sectionId: string;
+      label: string;
+    }>;
+  };
   // Step 5
   ticket_types: Array<{
     name: string; description: string; price: number;
@@ -94,7 +104,13 @@ const defaultData: WizardData = {
   online_url: '',
   online_platform: '',
   seating_type: 'general_admission',
-  seating_layout: [],
+  seating_layout: {
+    gridWidth: 20,
+    gridHeight: 20,
+    stage: { x: 8, y: 0, w: 4, h: 2 },
+    sections: [],
+    cells: []
+  },
   ticket_types: [{ name: 'General', description: '', price: 0, quantity: 100, sale_start: '', sale_end: '' }],
   currency: 'USD',
   max_capacity: null,

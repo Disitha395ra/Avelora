@@ -62,6 +62,7 @@ export function Step8Publish({ data }: Props) {
           contact_email: data.contact_email || null,
           contact_phone: data.contact_phone || null,
           currency: data.currency,
+          layout_metadata: data.seating_type === 'reserved' ? data.seating_layout : null,
         })
         .select()
         .single();
@@ -101,20 +102,27 @@ export function Step8Publish({ data }: Props) {
       }
 
       // Create seating layout if reserved
-      if (data.seating_type === 'reserved' && data.seating_layout?.length > 0) {
+      if (data.seating_type === 'reserved' && data.seating_layout?.sections?.length > 0) {
         let sortOrder = 0;
-        for (const section of data.seating_layout) {
+        const layout = data.seating_layout;
+        
+        for (const section of layout.sections) {
           const { data: sectionData, error: sectionError } = await supabase.from('seating_sections').insert({
             event_id: event.id,
             name: section.name,
-            capacity: section.rows * section.seatsPerRow,
+            capacity: layout.cells.filter(c => c.sectionId === section.id).length,
             price_override: section.price,
             sort_order: sortOrder++
           }).select().single();
 
           if (sectionError) throw sectionError;
 
-          for (let r = 1; r <= section.rows; r++) {
+          // Instead of looping over rows, we just group cells by Y coordinate to create 'rows'
+          const sectionCells = layout.cells.filter(c => c.sectionId === section.id);
+          const yCoords = Array.from(new Set(sectionCells.map(c => c.y))).sort((a, b) => a - b);
+          
+          let r = 1;
+          for (const y of yCoords) {
             const rowLabel = String.fromCharCode(64 + r); // A, B, C...
             const { data: rowData, error: rowError } = await supabase.from('seating_rows').insert({
               section_id: sectionData.id,
@@ -125,11 +133,13 @@ export function Step8Publish({ data }: Props) {
 
             if (rowError) throw rowError;
 
-            const seatsToInsert = Array.from({ length: section.seatsPerRow }).map((_, s) => ({
+            const rowCells = sectionCells.filter(c => c.y === y).sort((a, b) => a.x - b.x);
+            
+            const seatsToInsert = rowCells.map((cell, s) => ({
               event_id: event.id,
               section_id: sectionData.id,
               row_id: rowData.id,
-              label: `${rowLabel}${s + 1}`,
+              label: cell.label,
               row_label: rowLabel,
               seat_number: `${s + 1}`,
               price: section.price
@@ -139,6 +149,7 @@ export function Step8Publish({ data }: Props) {
               const { error: seatsError } = await supabase.from('seats').insert(seatsToInsert);
               if (seatsError) throw seatsError;
             }
+            r++;
           }
         }
       }
