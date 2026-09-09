@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, Rocket, Copy, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { generateSlug } from '@/utils';
+import { generateSlug, SITE_URL } from '@/utils';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/features/auth/AuthContext';
 import toast from 'react-hot-toast';
@@ -20,7 +20,7 @@ export function Step8Publish({ data }: Props) {
   const [eventSlug, setEventSlug] = useState('');
 
   const slug = generateSlug(data.title) || 'your-event';
-  const previewUrl = `${window.location.origin}/event/${slug}`;
+  const previewUrl = `${SITE_URL}/event/${slug}`;
 
   const handlePublish = async () => {
     if (!user) { toast.error('Please sign in to publish.'); return; }
@@ -155,7 +155,7 @@ export function Step8Publish({ data }: Props) {
   };
 
   if (published) {
-    const liveUrl = `${window.location.origin}/event/${eventSlug}`;
+    const liveUrl = `${SITE_URL}/event/${eventSlug}`;
     return (
       <div className="text-center py-8">
         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">

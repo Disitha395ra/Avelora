@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase/client';
+import { SITE_URL } from '@/utils';
 
 import {
   Calendar, MapPin, Clock, Users, Globe, Share2,
@@ -51,7 +52,7 @@ export default function EventPage() {
   const totalTickets = Object.values(quantities).reduce((a, b) => a + b, 0);
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
+    navigator.clipboard.writeText(`${SITE_URL}/event/${event.slug}`);
   };
 
   if (loading) return <div className="min-h-screen bg-white pt-24 text-center">Loading event...</div>;

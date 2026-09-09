@@ -45,6 +45,8 @@ export function generateSlug(title: string): string {
     .replace(/-+/g, '-');
 }
 
+export const SITE_URL = import.meta.env.VITE_SITE_URL || 'https://avelora-e6df9.web.app';
+
 export function generateBookingReference(): string {
   const year = new Date().getFullYear();
   const num = String(Math.floor(Math.random() * 999999)).padStart(6, '0');
