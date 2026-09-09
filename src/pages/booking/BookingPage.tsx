@@ -10,8 +10,7 @@ import { formatCurrency } from '@/utils';
 import toast from 'react-hot-toast';
 import { cn } from '@/utils';
 
-const STEPS = ['Details', 'Payment', 'Confirmation'];
-
+import { SeatingMap } from '@/components/booking/SeatingMap';
 // MOCK removed
 
 
@@ -33,23 +32,46 @@ export default function BookingPage() {
     }
   }, [event, navigate, selectedTickets]);
 
+  const STEPS = event?.seating_type === 'reserved' 
+    ? ['Select Seats', 'Details', 'Payment', 'Confirmation']
+    : ['Details', 'Payment', 'Confirmation'];
+
   const [step, setStep] = useState(0);
+  const [selectedSeats, setSelectedSeats] = useState<any[]>([]);
 
   const [processing, setProcessing] = useState(false);
   const [bookingRef, setBookingRef] = useState('');
 
-  const subtotal = selectedTickets.reduce((s: number, t: any) => s + t.price * t.quantity, 0);
+  // If reserved seating, use seat prices; otherwise use ticket type prices
+  const isReserved = event?.seating_type === 'reserved';
+  
+  const subtotal = isReserved 
+    ? selectedSeats.reduce((s: number, seat: any) => s + seat.price, 0)
+    : selectedTickets.reduce((s: number, t: any) => s + t.price * t.quantity, 0);
+
   const fees = Math.round(subtotal * 0.03 * 100) / 100;
   const total = subtotal + fees;
 
   // Attendee form state
-  const [attendees, setAttendees] = useState(
-    selectedTickets.flatMap((t: any) =>
-      Array.from({ length: t.quantity }, () => ({ 
-        first_name: '', last_name: '', email: '', phone: '', ticket_type_id: t.id 
-      }))
-    )
-  );
+  const [attendees, setAttendees] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (isReserved) {
+      setAttendees(
+        selectedSeats.map((s: any) => ({
+          first_name: '', last_name: '', email: '', phone: '', seat_id: s.id, ticket_type_id: selectedTickets[0]?.id 
+        }))
+      );
+    } else {
+      setAttendees(
+        selectedTickets.flatMap((t: any) =>
+          Array.from({ length: t.quantity }, () => ({ 
+            first_name: '', last_name: '', email: '', phone: '', ticket_type_id: t.id 
+          }))
+        )
+      );
+    }
+  }, [selectedSeats, selectedTickets, isReserved]);
 
   const updateAttendee = (i: number, field: string, value: string) => {
     setAttendees((prev: any[]) => prev.map((a: any, idx: number) => idx === i ? { ...a, [field]: value } : a));
@@ -67,16 +89,19 @@ export default function BookingPage() {
     setProcessing(true);
     
     try {
-      const items = selectedTickets.map((t: any) => ({
-        ticket_type_id: t.id,
-        quantity: t.quantity
-      }));
+      const items = isReserved && selectedTickets.length > 0
+        ? [{ ticket_type_id: selectedTickets[0].id, quantity: selectedSeats.length }]
+        : selectedTickets.map((t: any) => ({
+            ticket_type_id: t.id,
+            quantity: t.quantity
+          }));
 
       // Call RPC to create booking securely
       const { data: result, error: rpcError } = await supabase.rpc('create_booking', {
         p_event_id: event.id,
         p_customer_id: user.id,
-        p_items: items
+        p_items: items,
+        p_seat_ids: isReserved ? selectedSeats.map(s => s.id) : undefined
       });
 
       if (rpcError) throw rpcError;
@@ -94,7 +119,7 @@ export default function BookingPage() {
           const bItem = bookingItems.find(b => b.ticket_type_id === a.ticket_type_id);
           return {
             booking_id: result.booking_id,
-            booking_item_id: bItem?.id,
+            booking_item_id: bItem?.id || bookingItems[0]?.id,
             first_name: a.first_name,
             last_name: a.last_name,
             email: a.email,
@@ -106,7 +131,7 @@ export default function BookingPage() {
       }
 
       setBookingRef(result.booking_reference);
-      setStep(2);
+      setStep(isReserved ? 3 : 2);
       toast.success('Payment successful! 🎉');
     } catch (err: any) {
       console.error(err);
@@ -152,8 +177,32 @@ export default function BookingPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left: Form */}
             <div className="lg:col-span-2">
-              {/* Step 0: Attendee details */}
-              {step === 0 && (
+              {/* Step: Select Seats (if reserved) */}
+              {isReserved && step === 0 && (
+                <div className="bg-white border border-neutral-200 rounded-xl p-6">
+                  <h2 className="text-lg font-semibold text-neutral-900 mb-1 flex items-center gap-2">
+                    <User className="w-5 h-5 text-brand-500" /> Select Seats
+                  </h2>
+                  <p className="text-sm text-neutral-500 mb-6">Choose your seats from the map below.</p>
+                  
+                  <SeatingMap eventId={event.id} onSeatSelect={setSelectedSeats} />
+
+                  <Button
+                    fullWidth
+                    size="lg"
+                    className="mt-6"
+                    onClick={() => setStep(1)}
+                    disabled={selectedSeats.length === 0}
+                    icon={<ArrowRight className="w-4 h-4" />}
+                    iconPosition="right"
+                  >
+                    Continue to Details
+                  </Button>
+                </div>
+              )}
+
+              {/* Step: Attendee details */}
+              {((isReserved && step === 1) || (!isReserved && step === 0)) && (
                 <div className="bg-white border border-neutral-200 rounded-xl p-6">
                   <h2 className="text-lg font-semibold text-neutral-900 mb-1 flex items-center gap-2">
                     <User className="w-5 h-5 text-brand-500" /> Attendee Details
@@ -163,8 +212,9 @@ export default function BookingPage() {
                   <div className="space-y-6">
                     {attendees.map((a: any, i: number) => (
                       <div key={i} className="p-5 border border-neutral-200 rounded-xl">
-                        <p className="text-sm font-semibold text-neutral-700 mb-4">
-                          Attendee {i + 1}
+                        <p className="text-sm font-semibold text-neutral-700 mb-4 flex justify-between">
+                          <span>Attendee {i + 1}</span>
+                          {isReserved && <span className="text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full text-xs">Seat: {selectedSeats[i]?.label}</span>}
                         </p>
                         <div className="grid grid-cols-2 gap-4">
                           <Input
@@ -207,7 +257,7 @@ export default function BookingPage() {
                     fullWidth
                     size="lg"
                     className="mt-6"
-                    onClick={() => setStep(1)}
+                    onClick={() => setStep(isReserved ? 2 : 1)}
                     disabled={attendees.some((a: any) => !a.first_name || !a.last_name || !a.email)}
                     icon={<ArrowRight className="w-4 h-4" />}
                     iconPosition="right"
@@ -217,8 +267,8 @@ export default function BookingPage() {
                 </div>
               )}
 
-              {/* Step 1: Payment */}
-              {step === 1 && (
+              {/* Step: Payment */}
+              {((isReserved && step === 2) || (!isReserved && step === 1)) && (
                 <div className="bg-white border border-neutral-200 rounded-xl p-6">
                   <h2 className="text-lg font-semibold text-neutral-900 mb-1 flex items-center gap-2">
                     <CreditCard className="w-5 h-5 text-brand-500" /> Payment
@@ -264,7 +314,7 @@ export default function BookingPage() {
                   </div>
 
                   <div className="mt-6 flex gap-3">
-                    <Button variant="outline" onClick={() => setStep(0)} icon={<ArrowLeft className="w-4 h-4" />}>
+                    <Button variant="outline" onClick={() => setStep(isReserved ? 1 : 0)} icon={<ArrowLeft className="w-4 h-4" />}>
                       Back
                     </Button>
                     <Button
@@ -280,8 +330,8 @@ export default function BookingPage() {
                 </div>
               )}
 
-              {/* Step 2: Confirmation */}
-              {step === 2 && (
+              {/* Step: Confirmation */}
+              {((isReserved && step === 3) || (!isReserved && step === 2)) && (
                 <div className="bg-white border border-neutral-200 rounded-xl p-8 text-center">
                   <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                     <CheckCircle2 className="w-8 h-8 text-green-600" />
@@ -332,12 +382,21 @@ export default function BookingPage() {
                 </div>
 
                 <div className="space-y-2 mb-4">
-                  {selectedTickets.map((t: any) => (
-                    <div key={t.name} className="flex justify-between text-sm">
-                      <span className="text-neutral-600">{t.name} × {t.quantity}</span>
-                      <span className="font-medium">{formatCurrency(t.price * t.quantity, event.currency)}</span>
-                    </div>
-                  ))}
+                  {isReserved ? (
+                    selectedSeats.map((s: any) => (
+                      <div key={s.id} className="flex justify-between text-sm">
+                        <span className="text-neutral-600">Seat {s.label}</span>
+                        <span className="font-medium">{formatCurrency(s.price, event.currency)}</span>
+                      </div>
+                    ))
+                  ) : (
+                    selectedTickets.map((t: any) => (
+                      <div key={t.name} className="flex justify-between text-sm">
+                        <span className="text-neutral-600">{t.name} × {t.quantity}</span>
+                        <span className="font-medium">{formatCurrency(t.price * t.quantity, event.currency)}</span>
+                      </div>
+                    ))
+                  )}
                 </div>
 
                 <div className="border-t border-neutral-200 pt-3 space-y-1.5">

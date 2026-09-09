@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { Users, Layout, Table, Pencil } from 'lucide-react';
 import { cn } from '@/utils';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import type { WizardData } from '../CreateEventPage';
 
 interface Props {
@@ -42,8 +44,35 @@ const SEATING_TYPES = [
 
 export function Step4Seating({ data, updateData, onValid }: Props) {
   useEffect(() => {
-    onValid(!!data.seating_type);
-  }, [data.seating_type]);
+    if (data.seating_type === 'reserved') {
+      onValid(data.seating_layout && data.seating_layout.length > 0);
+    } else {
+      onValid(!!data.seating_type);
+    }
+  }, [data.seating_type, data.seating_layout]);
+
+  const addSection = () => {
+    const newSection = {
+      id: Math.random().toString(36).substring(7),
+      name: `Section ${data.seating_layout.length + 1}`,
+      rows: 5,
+      seatsPerRow: 10,
+      price: 50
+    };
+    updateData({ seating_layout: [...(data.seating_layout || []), newSection] });
+  };
+
+  const updateSection = (id: string, updates: any) => {
+    updateData({
+      seating_layout: data.seating_layout.map(s => s.id === id ? { ...s, ...updates } : s)
+    });
+  };
+
+  const removeSection = (id: string) => {
+    updateData({
+      seating_layout: data.seating_layout.filter(s => s.id !== id)
+    });
+  };
 
   return (
     <div>
@@ -87,13 +116,57 @@ export function Step4Seating({ data, updateData, onValid }: Props) {
         ))}
       </div>
 
-      {data.seating_type && (
+      {data.seating_type === 'reserved' ? (
+        <div className="mt-8 border-t border-neutral-200 pt-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-bold text-neutral-900">Seating Builder</h3>
+              <p className="text-sm text-neutral-500">Define sections, rows, and seats.</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={addSection}>+ Add Section</Button>
+          </div>
+
+          <div className="space-y-4">
+            {data.seating_layout?.map((section) => (
+              <div key={section.id} className="p-4 bg-white border border-neutral-200 rounded-xl flex items-center gap-4">
+                <div className="flex-1">
+                  <label className="text-xs font-semibold text-neutral-700">Section Name</label>
+                  <Input value={section.name} onChange={e => updateSection(section.id, { name: e.target.value })} className="mt-1" />
+                </div>
+                <div className="w-24">
+                  <label className="text-xs font-semibold text-neutral-700">Rows</label>
+                  <Input type="number" value={section.rows} onChange={e => updateSection(section.id, { rows: parseInt(e.target.value) || 0 })} className="mt-1" />
+                </div>
+                <div className="w-24">
+                  <label className="text-xs font-semibold text-neutral-700">Seats/Row</label>
+                  <Input type="number" value={section.seatsPerRow} onChange={e => updateSection(section.id, { seatsPerRow: parseInt(e.target.value) || 0 })} className="mt-1" />
+                </div>
+                <div className="w-32">
+                  <label className="text-xs font-semibold text-neutral-700">Ticket Price</label>
+                  <Input type="number" value={section.price} onChange={e => updateSection(section.id, { price: parseInt(e.target.value) || 0 })} className="mt-1" />
+                </div>
+                <div className="pt-6">
+                  <button onClick={() => removeSection(section.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
+            {(!data.seating_layout || data.seating_layout.length === 0) && (
+              <div className="p-8 text-center bg-neutral-50 rounded-xl border border-dashed border-neutral-300">
+                <p className="text-sm text-neutral-500 mb-4">No sections added yet.</p>
+                <Button variant="primary" onClick={addSection}>Add First Section</Button>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : data.seating_type && (
         <div className="mt-6 p-4 bg-neutral-50 border border-neutral-200 rounded-lg">
           <p className="text-sm font-medium text-neutral-700">
             ✓ Selected: {SEATING_TYPES.find(t => t.value === data.seating_type)?.label}
           </p>
           <p className="text-xs text-neutral-500 mt-1">
-            You'll be able to configure the full seating map in your event management dashboard after publishing.
+            General seating requires no detailed map.
           </p>
         </div>
       )}

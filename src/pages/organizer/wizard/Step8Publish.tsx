@@ -94,6 +94,49 @@ export function Step8Publish({ data }: Props) {
         });
       }
 
+      // Create seating layout if reserved
+      if (data.seating_type === 'reserved' && data.seating_layout?.length > 0) {
+        let sortOrder = 0;
+        for (const section of data.seating_layout) {
+          const { data: sectionData, error: sectionError } = await supabase.from('seating_sections').insert({
+            event_id: event.id,
+            name: section.name,
+            capacity: section.rows * section.seatsPerRow,
+            price_override: section.price,
+            sort_order: sortOrder++
+          }).select().single();
+
+          if (sectionError) throw sectionError;
+
+          for (let r = 1; r <= section.rows; r++) {
+            const rowLabel = String.fromCharCode(64 + r); // A, B, C...
+            const { data: rowData, error: rowError } = await supabase.from('seating_rows').insert({
+              section_id: sectionData.id,
+              event_id: event.id,
+              label: rowLabel,
+              sort_order: r
+            }).select().single();
+
+            if (rowError) throw rowError;
+
+            const seatsToInsert = Array.from({ length: section.seatsPerRow }).map((_, s) => ({
+              event_id: event.id,
+              section_id: sectionData.id,
+              row_id: rowData.id,
+              label: `${rowLabel}${s + 1}`,
+              row_label: rowLabel,
+              seat_number: `${s + 1}`,
+              price: section.price
+            }));
+
+            if (seatsToInsert.length > 0) {
+              const { error: seatsError } = await supabase.from('seats').insert(seatsToInsert);
+              if (seatsError) throw seatsError;
+            }
+          }
+        }
+      }
+
       setEventSlug(event.slug);
       setPublished(true);
       toast.success('🎉 Event published successfully!');

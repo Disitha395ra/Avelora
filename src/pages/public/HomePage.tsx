@@ -164,7 +164,7 @@ export default function HomePage() {
           <div className="mt-16 relative">
             <div className="bg-neutral-50 border border-neutral-200 rounded-2xl overflow-hidden shadow-xl">
               <img
-                src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1400&auto=format&fit=crop&q=85"
+                src="/hero-cover.jpg"
                 alt="Avelora platform preview — FutureTech Summit event page"
                 className="w-full h-[420px] object-cover object-center"
               />

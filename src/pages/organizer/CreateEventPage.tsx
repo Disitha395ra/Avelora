@@ -37,6 +37,13 @@ export interface WizardData {
   online_platform: string;
   // Step 4
   seating_type: 'general_admission' | 'reserved' | 'table' | 'custom';
+  seating_layout: Array<{
+    id: string;
+    name: string;
+    rows: number;
+    seatsPerRow: number;
+    price: number;
+  }>;
   // Step 5
   ticket_types: Array<{
     name: string; description: string; price: number;
@@ -87,6 +94,7 @@ const defaultData: WizardData = {
   online_url: '',
   online_platform: '',
   seating_type: 'general_admission',
+  seating_layout: [],
   ticket_types: [{ name: 'General', description: '', price: 0, quantity: 100, sale_start: '', sale_end: '' }],
   currency: 'USD',
   max_capacity: null,
