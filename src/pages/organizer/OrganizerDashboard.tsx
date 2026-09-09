@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase/client';
 import {
   Calendar, TrendingUp, DollarSign, Users, Plus, ArrowRight,
   Eye, Edit, BarChart3, CheckCircle2, BookOpen
@@ -12,57 +14,67 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 
-// Mock data — replace with Supabase queries
-const STATS = [
-  { label: 'Total Events', value: '12', change: '+2 this month', changeType: 'positive' as const, icon: <Calendar className="w-5 h-5 text-brand-500" />, iconColor: 'bg-brand-50' },
-  { label: 'Total Bookings', value: '1,847', change: '+234 this week', changeType: 'positive' as const, icon: <Users className="w-5 h-5 text-green-500" />, iconColor: 'bg-green-50' },
-  { label: 'Revenue', value: '$48,920', change: '+12.4% vs last month', changeType: 'positive' as const, icon: <DollarSign className="w-5 h-5 text-blue-500" />, iconColor: 'bg-blue-50' },
-  { label: 'Conversion Rate', value: '74.2%', change: '+2.1% vs last month', changeType: 'positive' as const, icon: <TrendingUp className="w-5 h-5 text-violet-500" />, iconColor: 'bg-violet-50' },
-];
-
-const REVENUE_DATA = [
-  { month: 'Oct', revenue: 4200, bookings: 82 },
-  { month: 'Nov', revenue: 6800, bookings: 134 },
-  { month: 'Dec', revenue: 5900, bookings: 110 },
-  { month: 'Jan', revenue: 9200, bookings: 180 },
-  { month: 'Feb', revenue: 11400, bookings: 224 },
-  { month: 'Mar', revenue: 11120, bookings: 217 },
-];
-
-const MY_EVENTS = [
-  {
-    id: '1', title: 'FutureTech Summit 2026', type: 'Conference',
-    date: 'Mar 12–14, 2026', status: 'published', sold: 2165, capacity: 2600, revenue: '$31,200',
-    image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=100&auto=format&fit=crop&q=80',
-  },
-  {
-    id: '2', title: 'Startup Masterclass Series', type: 'Workshop',
-    date: 'Feb 18, 2026', status: 'published', sold: 48, capacity: 50, revenue: '$4,320',
-    image: 'https://images.unsplash.com/photo-1558403194-611308249627?w=100&auto=format&fit=crop&q=80',
-  },
-  {
-    id: '3', title: 'Annual Awards Night 2026', type: 'Award Ceremony',
-    date: 'Jan 30, 2026', status: 'completed', sold: 380, capacity: 400, revenue: '$13,400',
-    image: 'https://images.unsplash.com/photo-1459767129954-1b1c1f9b9ace?w=100&auto=format&fit=crop&q=80',
-  },
-  {
-    id: '4', title: 'Product Design Sprint', type: 'Workshop',
-    date: 'Apr 5, 2026', status: 'draft', sold: 0, capacity: 30, revenue: '$0',
-    image: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=100&auto=format&fit=crop&q=80',
-  },
-];
-
-const RECENT_BOOKINGS = [
-  { ref: 'AVL-2026-001847', attendee: 'Sarah Mitchell', event: 'FutureTech Summit 2026', amount: '$399', status: 'confirmed', time: '2 min ago' },
-  { ref: 'AVL-2026-001846', attendee: 'Marcus Chen', event: 'FutureTech Summit 2026', amount: '$199', status: 'confirmed', time: '18 min ago' },
-  { ref: 'AVL-2026-001845', attendee: 'Priya Sharma', event: 'Startup Masterclass', amount: '$89', status: 'confirmed', time: '1 hr ago' },
-  { ref: 'AVL-2026-001844', attendee: 'James Okafor', event: 'FutureTech Summit 2026', amount: '$899', status: 'confirmed', time: '2 hr ago' },
-  { ref: 'AVL-2026-001843', attendee: 'Amara Williams', event: 'FutureTech Summit 2026', amount: '$399', status: 'cancelled', time: '3 hr ago' },
-];
+// Mock data arrays removed in favor of live queries
 
 export default function OrganizerDashboard() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const firstName = profile?.full_name?.split(' ')[0] || 'Organizer';
+  const [events, setEvents] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchDashboardData = async () => {
+      // 1. Fetch events
+      const { data: eventsData } = await supabase
+        .from('events')
+        .select('*, ticket_types(quantity, quantity_sold)')
+        .eq('organizer_id', user.id)
+        .order('created_at', { ascending: false });
+        
+      if (eventsData) {
+        setEvents(eventsData);
+        const eventIds = eventsData.map(e => e.id);
+        
+        if (eventIds.length > 0) {
+          // 2. Fetch bookings for these events
+          const { data: bookingsData } = await supabase
+            .from('bookings')
+            .select('*')
+            .in('event_id', eventIds)
+            .order('created_at', { ascending: false });
+            
+          if (bookingsData) {
+            setBookings(bookingsData);
+          }
+        }
+      }
+      setLoading(false);
+    };
+    fetchDashboardData();
+  }, [user]);
+
+  // Compute stats dynamically
+  const totalRevenue = bookings.reduce((sum, b) => sum + (b.total || 0), 0);
+  const totalBookingsCount = bookings.length;
+
+  const STATS = [
+    { label: 'Total Events', value: events.length.toString(), change: '', changeType: 'neutral' as const, icon: <Calendar className="w-5 h-5 text-brand-500" />, iconColor: 'bg-brand-50' },
+    { label: 'Total Bookings', value: totalBookingsCount.toString(), change: '', changeType: 'neutral' as const, icon: <Users className="w-5 h-5 text-green-500" />, iconColor: 'bg-green-50' },
+    { label: 'Revenue', value: `$${totalRevenue.toLocaleString()}`, change: '', changeType: 'neutral' as const, icon: <DollarSign className="w-5 h-5 text-blue-500" />, iconColor: 'bg-blue-50' },
+    { label: 'Conversion Rate', value: 'N/A', change: '', changeType: 'neutral' as const, icon: <TrendingUp className="w-5 h-5 text-violet-500" />, iconColor: 'bg-violet-50' },
+  ];
+
+  // Dummy revenue data until historical aggregation is needed
+  const REVENUE_DATA = [
+    { month: 'Oct', revenue: 0, bookings: 0 },
+    { month: 'Nov', revenue: 0, bookings: 0 },
+    { month: 'Dec', revenue: 0, bookings: 0 },
+    { month: 'Jan', revenue: 0, bookings: 0 },
+    { month: 'Feb', revenue: 0, bookings: 0 },
+    { month: 'Mar', revenue: totalRevenue, bookings: totalBookingsCount },
+  ];
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -162,32 +174,39 @@ export default function OrganizerDashboard() {
           </Link>
         </div>
         <div className="divide-y divide-neutral-100">
-          {MY_EVENTS.map((event) => {
-            const pct = Math.round((event.sold / event.capacity) * 100);
+          {loading ? (
+            <div className="p-8 text-center text-neutral-500">Loading events...</div>
+          ) : events.length === 0 ? (
+            <div className="p-8 text-center text-neutral-500">No events found. Create your first event!</div>
+          ) : events.map((event) => {
+            const eventBookings = bookings.filter(b => b.event_id === event.id);
+            const sold = event.ticket_types?.reduce((sum: number, t: any) => sum + (t.quantity_sold || 0), 0) || 0;
+            const revenue = eventBookings.reduce((sum, b) => sum + (b.total || 0), 0);
+            const pct = event.max_capacity ? Math.round((sold / event.max_capacity) * 100) : 0;
             return (
               <div key={event.id} className="flex items-center gap-4 p-4 hover:bg-neutral-50 transition-colors">
-                <img src={event.image} alt={event.title} className="w-12 h-12 rounded-lg object-cover shrink-0 border border-neutral-100" />
+                <img src={event.cover_image_url || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=100&auto=format&fit=crop&q=80'} alt={event.title} className="w-12 h-12 rounded-lg object-cover shrink-0 border border-neutral-100" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <p className="text-sm font-semibold text-neutral-900 truncate">{event.title}</p>
                     <StatusBadge status={event.status} />
                   </div>
                   <div className="flex items-center gap-3 text-xs text-neutral-500">
-                    <span>{event.type}</span>
+                    <span className="capitalize">{event.event_type}</span>
                     <span>·</span>
-                    <span>{event.date}</span>
+                    <span>{new Date(event.start_date).toLocaleDateString()}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-2">
                     <div className="flex-1 max-w-32 h-1 bg-neutral-100 rounded-full">
-                      <div className="h-1 bg-brand-500 rounded-full" style={{ width: `${pct}%` }} />
+                      <div className="h-1 bg-brand-500 rounded-full" style={{ width: `${Math.min(pct, 100)}%` }} />
                     </div>
-                    <span className="text-xs text-neutral-500">{event.sold}/{event.capacity} sold</span>
+                    <span className="text-xs text-neutral-500">{sold}/{event.max_capacity || '∞'} sold</span>
                   </div>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-sm font-bold text-neutral-900">{event.revenue}</p>
+                  <p className="text-sm font-bold text-neutral-900">${revenue.toLocaleString()}</p>
                   <div className="flex items-center gap-1 mt-2 justify-end">
-                    <Link to={`/event/${event.id}`} className="p-1.5 text-neutral-400 hover:text-neutral-600 rounded-md hover:bg-neutral-100 transition-colors">
+                    <Link to={`/event/${event.slug}`} className="p-1.5 text-neutral-400 hover:text-neutral-600 rounded-md hover:bg-neutral-100 transition-colors">
                       <Eye className="w-3.5 h-3.5" />
                     </Link>
                     <Link to={`/organizer/events/${event.id}/edit`} className="p-1.5 text-neutral-400 hover:text-neutral-600 rounded-md hover:bg-neutral-100 transition-colors">
@@ -221,16 +240,18 @@ export default function OrganizerDashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-50">
-              {RECENT_BOOKINGS.map((b) => (
-                <tr key={b.ref} className="hover:bg-neutral-50 transition-colors">
-                  <td className="px-6 py-3 text-xs font-mono text-neutral-500">{b.ref}</td>
-                  <td className="px-6 py-3 text-sm font-medium text-neutral-900">{b.attendee}</td>
-                  <td className="px-6 py-3 text-sm text-neutral-600 max-w-[160px] truncate">{b.event}</td>
-                  <td className="px-6 py-3 text-sm font-semibold text-neutral-900">{b.amount}</td>
+              {bookings.slice(0, 5).map((b) => {
+                const event = events.find(e => e.id === b.event_id);
+                return (
+                <tr key={b.id} className="hover:bg-neutral-50 transition-colors">
+                  <td className="px-6 py-3 text-xs font-mono text-neutral-500">{b.booking_reference}</td>
+                  <td className="px-6 py-3 text-sm font-medium text-neutral-900">Attendee</td>
+                  <td className="px-6 py-3 text-sm text-neutral-600 max-w-[160px] truncate">{event?.title || 'Unknown Event'}</td>
+                  <td className="px-6 py-3 text-sm font-semibold text-neutral-900">${b.total}</td>
                   <td className="px-6 py-3"><StatusBadge status={b.status} /></td>
-                  <td className="px-6 py-3 text-xs text-neutral-400">{b.time}</td>
+                  <td className="px-6 py-3 text-xs text-neutral-400">{new Date(b.created_at).toLocaleDateString()}</td>
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
         </div>

@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { supabase } from '@/lib/supabase/client';
 
 import {
   Calendar, MapPin, Clock, Users, Globe, Share2,
@@ -13,75 +14,48 @@ import { formatCurrency } from '@/utils';
 import { cn } from '@/utils';
 
 
-// Mock event — replace with Supabase query
-const MOCK_EVENT = {
-  id: '1',
-  slug: 'futuretech-summit-2026',
-  title: 'FutureTech Summit 2026',
-  type: 'Conference',
-  status: 'published',
-  short_description: 'The premier technology leadership conference bringing together 2,400+ innovators across AI, Web3, and the future of work.',
-  description: `FutureTech Summit 2026 is the definitive technology conference for visionary leaders, engineers, and entrepreneurs. Over three transformative days in San Francisco, you'll engage with world-class speakers, explore cutting-edge technologies, and build meaningful connections with the global tech community.
-
-This year's theme — **Intelligence at Scale** — will examine how artificial intelligence, distributed computing, and exponential technologies are reshaping industries, societies, and the very nature of work itself.
-
-Whether you're a seasoned CTO, an ambitious startup founder, or a curious technologist, FutureTech Summit 2026 offers an unparalleled opportunity to shape your thinking, expand your network, and accelerate your impact.`,
-  start_date: '2026-03-12',
-  end_date: '2026-03-14',
-  start_time: '09:00',
-  end_time: '18:00',
-  timezone: 'America/Los_Angeles',
-  cover_image_url: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1400&auto=format&fit=crop&q=85',
-  organizer_name: 'TechVentures Inc.',
-  organizer_logo: 'TV',
-  currency: 'USD',
-  venue_type: 'physical',
-  location: {
-    venue_name: 'Moscone Center',
-    address: '747 Howard St',
-    city: 'San Francisco',
-    state: 'CA',
-    country: 'United States',
-  },
-  speakers: [
-    { id: '1', name: 'Dr. Priya Sharma', title: 'Chief AI Officer', org: 'DeepMind', avatar: 'PS' },
-    { id: '2', name: 'Marcus Chen', title: 'Co-Founder & CEO', org: 'Quantum Labs', avatar: 'MC' },
-    { id: '3', name: 'Dr. Elena Vasquez', title: 'Professor of CS', org: 'MIT', avatar: 'EV' },
-    { id: '4', name: 'James Okafor', title: 'VP Engineering', org: 'Google', avatar: 'JO' },
-    { id: '5', name: 'Amara Williams', title: 'Founder', org: 'NeuralPath AI', avatar: 'AW' },
-    { id: '6', name: 'Dr. Raj Patel', title: 'CTO', org: 'FutureSystems', avatar: 'RP' },
-  ],
-  schedule: [
-    { time: '09:00', title: 'Registration & Welcome Coffee', location: 'Grand Lobby' },
-    { time: '10:00', title: 'Opening Keynote: Intelligence at Scale', location: 'Main Auditorium', speaker: 'Dr. Priya Sharma' },
-    { time: '11:30', title: 'Panel: The Future of AI in Enterprise', location: 'Main Auditorium' },
-    { time: '13:00', title: 'Networking Lunch', location: 'Exhibition Hall' },
-    { time: '14:00', title: 'Technical Session A: LLM Architectures', location: 'Hall A' },
-    { time: '14:00', title: 'Technical Session B: Web3 Infrastructure', location: 'Hall B' },
-    { time: '15:30', title: 'Coffee Break & Expo Floor', location: 'Exhibition Hall' },
-    { time: '16:00', title: 'Fireside Chat: The VC Perspective', location: 'Main Auditorium', speaker: 'Marcus Chen' },
-    { time: '17:00', title: 'Day 1 Closing Remarks', location: 'Main Auditorium' },
-    { time: '18:00', title: 'Networking Reception', location: 'Rooftop Terrace' },
-  ],
-  ticket_types: [
-    { id: '1', name: 'General', description: 'Full 3-day access to all sessions and exhibition hall.', price: 199, quantity: 1800, sold: 1650 },
-    { id: '2', name: 'Professional', description: 'General access + workshops, speaker meet & greet, lunch.', price: 399, quantity: 500, sold: 430 },
-    { id: '3', name: 'VIP', description: 'All access + exclusive VIP lounge, reserved seating, and post-event dinner.', price: 899, quantity: 100, sold: 85 },
-  ],
-};
+// Mock removed in favor of live query
 
 export default function EventPage() {
-  const event = MOCK_EVENT; // In production: useQuery to fetch by slug
+  const { slug } = useParams();
+  const [event, setEvent] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEvent = async () => {
+      if (!slug) return;
+      const { data } = await supabase
+        .from('events')
+        .select('*, event_locations(*), ticket_types(*)')
+        .eq('slug', slug)
+        .single();
+      
+      if (data) {
+        setEvent({
+          ...data,
+          location: data.event_locations || {},
+          ticket_types: data.ticket_types || [],
+          schedule: [],
+          speakers: []
+        });
+      }
+      setLoading(false);
+    };
+    fetchEvent();
+  }, [slug]);
   const [quantities, setQuantities] = useState<Record<string, number>>({ '1': 0, '2': 0, '3': 0 });
   const [, setBookingOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'about' | 'schedule' | 'speakers' | 'tickets' | 'venue'>('about');
 
-  const totalAmount = event.ticket_types.reduce((sum, t) => sum + t.price * (quantities[t.id] || 0), 0);
+  const totalAmount = event?.ticket_types?.reduce((sum: number, t: any) => sum + t.price * (quantities[t.id] || 0), 0) || 0;
   const totalTickets = Object.values(quantities).reduce((a, b) => a + b, 0);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
   };
+
+  if (loading) return <div className="min-h-screen bg-white pt-24 text-center">Loading event...</div>;
+  if (!event) return <div className="min-h-screen bg-white pt-24 text-center">Event not found.</div>;
 
   return (
     <div className="min-h-screen bg-white">
@@ -111,8 +85,8 @@ export default function EventPage() {
           <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10">
             <div className="max-w-5xl mx-auto">
               <div className="flex items-center gap-2 mb-3">
-                <Badge variant="primary">{event.type}</Badge>
-                <Badge variant="success" dot>Published</Badge>
+                <Badge variant="primary" className="capitalize">{event.event_type}</Badge>
+                {event.status === 'published' && <Badge variant="success" dot>Published</Badge>}
               </div>
               <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight">{event.title}</h1>
               <p className="mt-2 text-neutral-300 text-sm sm:text-base max-w-2xl">{event.short_description}</p>
@@ -129,10 +103,10 @@ export default function EventPage() {
               {/* Quick info bar */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
                 {[
-                  { icon: Calendar, label: 'Date', value: 'Mar 12–14, 2026' },
-                  { icon: Clock, label: 'Time', value: '9:00 AM PST' },
-                  { icon: MapPin, label: 'Venue', value: event.location.city + ', ' + event.location.state },
-                  { icon: Users, label: 'Attendees', value: '2,400+' },
+                  { icon: Calendar, label: 'Date', value: new Date(event.start_date).toLocaleDateString() },
+                  { icon: Clock, label: 'Time', value: event.start_time },
+                  { icon: MapPin, label: 'Venue', value: event.venue_type === 'online' ? 'Online' : (event.location.city || 'TBD') },
+                  { icon: Users, label: 'Capacity', value: event.max_capacity ? `${event.max_capacity} max` : 'Unlimited' },
                 ].map((item) => (
                   <div key={item.label} className="flex items-start gap-2.5 p-3 bg-neutral-50 rounded-xl border border-neutral-100">
                     <item.icon className="w-4 h-4 text-brand-500 mt-0.5 shrink-0" />
@@ -169,8 +143,8 @@ export default function EventPage() {
 
                   {/* Organizer */}
                   <div className="mt-8 p-4 bg-neutral-50 border border-neutral-200 rounded-xl flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-brand-100 flex items-center justify-center text-brand-700 font-bold">
-                      {event.organizer_logo}
+                    <div className="w-12 h-12 rounded-xl bg-brand-100 flex items-center justify-center text-brand-700 font-bold uppercase">
+                      {event.organizer_name ? event.organizer_name.substring(0, 2) : 'EV'}
                     </div>
                     <div>
                       <p className="text-xs text-neutral-500">Organized by</p>
@@ -186,8 +160,8 @@ export default function EventPage() {
               {/* Schedule */}
               {activeTab === 'schedule' && (
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-4">Day 1 — March 12, 2026</p>
-                  {event.schedule.map((item, i) => (
+                  <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-4">Day 1 — {new Date(event.start_date).toLocaleDateString()}</p>
+                  {event.schedule?.map((item: any, i: number) => (
                     <div key={i} className="flex gap-4 p-4 bg-white border border-neutral-200 rounded-xl hover:border-neutral-300 transition-colors">
                       <div className="w-14 shrink-0">
                         <span className="text-sm font-bold text-brand-600">{item.time}</span>
@@ -209,7 +183,7 @@ export default function EventPage() {
               {/* Speakers */}
               {activeTab === 'speakers' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {event.speakers.map((speaker) => (
+                  {event.speakers?.map((speaker: any) => (
                     <div key={speaker.id} className="flex items-center gap-3 p-4 bg-white border border-neutral-200 rounded-xl hover:shadow-sm transition-shadow">
                       <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-600 font-semibold text-sm shrink-0">
                         {speaker.avatar}
@@ -227,9 +201,11 @@ export default function EventPage() {
               {/* Tickets (tab view) */}
               {activeTab === 'tickets' && (
                 <div className="space-y-3">
-                  {event.ticket_types.map((t) => {
-                    const remaining = t.quantity - t.sold;
-                    const pct = Math.round((t.sold / t.quantity) * 100);
+                  {event.ticket_types?.length === 0 ? (
+                    <p className="text-neutral-500">No tickets available.</p>
+                  ) : event.ticket_types.map((t: any) => {
+                    const remaining = t.quantity - (t.quantity_sold || 0);
+                    const pct = Math.round(((t.quantity_sold || 0) / t.quantity) * 100);
                     return (
                       <div key={t.id} className="p-5 border border-neutral-200 rounded-xl hover:border-brand-200 transition-colors">
                         <div className="flex items-start justify-between mb-2">
@@ -297,8 +273,8 @@ export default function EventPage() {
                   <h3 className="font-semibold text-neutral-900 mb-4">Select Tickets</h3>
 
                   <div className="space-y-3 mb-5">
-                    {event.ticket_types.map((t) => {
-                      const remaining = t.quantity - t.sold;
+                    {event.ticket_types?.map((t: any) => {
+                      const remaining = t.quantity - (t.quantity_sold || 0);
                       const qty = quantities[t.id] || 0;
                       return (
                         <div key={t.id} className="p-3 border border-neutral-200 rounded-lg">
@@ -343,7 +319,7 @@ export default function EventPage() {
                     </div>
                   )}
 
-                  <Link to={`/event/${event.slug}/book`}>
+                  <Link to={`/event/${event.slug}/book`} state={{ quantities, event }}>
                     <Button
                       fullWidth
                       size="lg"
@@ -369,7 +345,7 @@ export default function EventPage() {
                 <div className="mt-4 p-4 bg-neutral-50 border border-neutral-200 rounded-xl">
                   <p className="text-xs font-medium text-neutral-500 mb-1">Questions?</p>
                   <p className="text-sm text-neutral-700">
-                    Contact: <a href="mailto:info@futuretech.com" className="text-brand-600 hover:underline">info@futuretech.com</a>
+                    Contact: <a href={`mailto:${event.contact_email || 'hello@avelora.com'}`} className="text-brand-600 hover:underline">{event.contact_email || 'hello@avelora.com'}</a>
                   </p>
                 </div>
               </div>

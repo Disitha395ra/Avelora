@@ -1,7 +1,8 @@
-import { useState } from 'react';
-
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, CheckCircle2, CreditCard, Lock, User } from 'lucide-react';
+import { supabase } from '@/lib/supabase/client';
+import { useAuth } from '@/features/auth/AuthContext';
 import { Navbar } from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -11,49 +12,111 @@ import { cn } from '@/utils';
 
 const STEPS = ['Details', 'Payment', 'Confirmation'];
 
-// Mock event — would come from URL params
-const EVENT = {
-  id: '1', slug: 'futuretech-summit-2026', title: 'FutureTech Summit 2026',
-  date: 'Mar 12–14, 2026', venue: 'Moscone Center, San Francisco', currency: 'USD',
-};
+// MOCK removed
 
-const SELECTED_TICKETS = [
-  { name: 'Professional', quantity: 2, price: 399 },
-];
 
 export default function BookingPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const event = location.state?.event;
+  const quantities = location.state?.quantities || {};
+
+  // Extract selected tickets from event.ticket_types based on quantities
+  const selectedTickets = event?.ticket_types
+    ?.filter((t: any) => quantities[t.id] > 0)
+    ?.map((t: any) => ({ ...t, quantity: quantities[t.id] })) || [];
+
+  useEffect(() => {
+    if (!event || selectedTickets.length === 0) {
+      navigate('/discover');
+    }
+  }, [event, navigate, selectedTickets]);
+
   const [step, setStep] = useState(0);
 
   const [processing, setProcessing] = useState(false);
   const [bookingRef, setBookingRef] = useState('');
 
-  const subtotal = SELECTED_TICKETS.reduce((s, t) => s + t.price * t.quantity, 0);
+  const subtotal = selectedTickets.reduce((s: number, t: any) => s + t.price * t.quantity, 0);
   const fees = Math.round(subtotal * 0.03 * 100) / 100;
   const total = subtotal + fees;
 
   // Attendee form state
   const [attendees, setAttendees] = useState(
-    SELECTED_TICKETS.flatMap(t =>
-      Array.from({ length: t.quantity }, () => ({ first_name: '', last_name: '', email: '', phone: '' }))
+    selectedTickets.flatMap((t: any) =>
+      Array.from({ length: t.quantity }, () => ({ 
+        first_name: '', last_name: '', email: '', phone: '', ticket_type_id: t.id 
+      }))
     )
   );
 
   const updateAttendee = (i: number, field: string, value: string) => {
-    setAttendees(prev => prev.map((a, idx) => idx === i ? { ...a, [field]: value } : a));
+    setAttendees((prev: any[]) => prev.map((a: any, idx: number) => idx === i ? { ...a, [field]: value } : a));
   };
 
   const [cardData, setCardData] = useState({ number: '', expiry: '', cvc: '', name: '' });
 
   const handlePayment = async () => {
+    if (!user) {
+      toast.error('You must be logged in to book tickets.');
+      navigate('/login');
+      return;
+    }
+    
     setProcessing(true);
-    // Simulate payment processing
-    await new Promise(r => setTimeout(r, 2000));
-    const ref = `AVL-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 999999)).padStart(6, '0')}`;
-    setBookingRef(ref);
-    setStep(2);
-    setProcessing(false);
-    toast.success('Payment successful! 🎉');
+    
+    try {
+      const items = selectedTickets.map((t: any) => ({
+        ticket_type_id: t.id,
+        quantity: t.quantity
+      }));
+
+      // Call RPC to create booking securely
+      const { data: result, error: rpcError } = await supabase.rpc('create_booking', {
+        p_event_id: event.id,
+        p_customer_id: user.id,
+        p_items: items
+      });
+
+      if (rpcError) throw rpcError;
+
+      // Now insert attendees
+      // 1. Get the created booking_items to map attendees to booking_item_id
+      const { data: bookingItems } = await supabase
+        .from('booking_items')
+        .select('id, ticket_type_id')
+        .eq('booking_id', result.booking_id);
+
+      if (bookingItems) {
+        const attendeesToInsert = attendees.map((a: any) => {
+          // find matching booking_item for this ticket_type_id
+          const bItem = bookingItems.find(b => b.ticket_type_id === a.ticket_type_id);
+          return {
+            booking_id: result.booking_id,
+            booking_item_id: bItem?.id,
+            first_name: a.first_name,
+            last_name: a.last_name,
+            email: a.email,
+            phone: a.phone
+          };
+        });
+
+        await supabase.from('attendees').insert(attendeesToInsert);
+      }
+
+      setBookingRef(result.booking_reference);
+      setStep(2);
+      toast.success('Payment successful! 🎉');
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Failed to process booking');
+    } finally {
+      setProcessing(false);
+    }
   };
+
+  if (!event || selectedTickets.length === 0) return null;
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -63,7 +126,7 @@ export default function BookingPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
           {/* Back */}
           <Link
-            to={`/event/${EVENT.slug}`}
+            to={`/event/${event.slug}`}
             className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-700 mb-6"
           >
             <ArrowLeft className="w-4 h-4" /> Back to event
@@ -98,10 +161,10 @@ export default function BookingPage() {
                   <p className="text-sm text-neutral-500 mb-6">Please enter details for each ticket.</p>
 
                   <div className="space-y-6">
-                    {attendees.map((a, i) => (
+                    {attendees.map((a: any, i: number) => (
                       <div key={i} className="p-5 border border-neutral-200 rounded-xl">
                         <p className="text-sm font-semibold text-neutral-700 mb-4">
-                          Attendee {i + 1} — {SELECTED_TICKETS[0].name}
+                          Attendee {i + 1}
                         </p>
                         <div className="grid grid-cols-2 gap-4">
                           <Input
@@ -145,7 +208,7 @@ export default function BookingPage() {
                     size="lg"
                     className="mt-6"
                     onClick={() => setStep(1)}
-                    disabled={attendees.some(a => !a.first_name || !a.last_name || !a.email)}
+                    disabled={attendees.some((a: any) => !a.first_name || !a.last_name || !a.email)}
                     icon={<ArrowRight className="w-4 h-4" />}
                     iconPosition="right"
                   >
@@ -211,7 +274,7 @@ export default function BookingPage() {
                       loading={processing}
                       disabled={!cardData.name || !cardData.number || !cardData.expiry || !cardData.cvc}
                     >
-                      Pay {formatCurrency(total, EVENT.currency)}
+                      Pay {formatCurrency(total, event.currency)}
                     </Button>
                   </div>
                 </div>
@@ -263,16 +326,16 @@ export default function BookingPage() {
                 <h3 className="font-semibold text-neutral-900 mb-4">Order Summary</h3>
 
                 <div className="mb-4 p-3 bg-neutral-50 border border-neutral-200 rounded-lg">
-                  <p className="text-sm font-semibold text-neutral-900">{EVENT.title}</p>
-                  <p className="text-xs text-neutral-500 mt-1">{EVENT.date}</p>
-                  <p className="text-xs text-neutral-500">{EVENT.venue}</p>
+                  <p className="text-sm font-semibold text-neutral-900">{event.title}</p>
+                  <p className="text-xs text-neutral-500 mt-1">{new Date(event.start_date).toLocaleDateString()}</p>
+                  <p className="text-xs text-neutral-500">{event.venue_type === 'online' ? 'Online' : event.location?.city}</p>
                 </div>
 
                 <div className="space-y-2 mb-4">
-                  {SELECTED_TICKETS.map(t => (
+                  {selectedTickets.map((t: any) => (
                     <div key={t.name} className="flex justify-between text-sm">
                       <span className="text-neutral-600">{t.name} × {t.quantity}</span>
-                      <span className="font-medium">{formatCurrency(t.price * t.quantity, EVENT.currency)}</span>
+                      <span className="font-medium">{formatCurrency(t.price * t.quantity, event.currency)}</span>
                     </div>
                   ))}
                 </div>
@@ -280,15 +343,15 @@ export default function BookingPage() {
                 <div className="border-t border-neutral-200 pt-3 space-y-1.5">
                   <div className="flex justify-between text-sm text-neutral-500">
                     <span>Subtotal</span>
-                    <span>{formatCurrency(subtotal, EVENT.currency)}</span>
+                    <span>{formatCurrency(subtotal, event.currency)}</span>
                   </div>
                   <div className="flex justify-between text-sm text-neutral-500">
                     <span>Platform fee (3%)</span>
-                    <span>{formatCurrency(fees, EVENT.currency)}</span>
+                    <span>{formatCurrency(fees, event.currency)}</span>
                   </div>
                   <div className="flex justify-between text-base font-bold text-neutral-900 pt-2 border-t border-neutral-200">
                     <span>Total</span>
-                    <span>{formatCurrency(total, EVENT.currency)}</span>
+                    <span>{formatCurrency(total, event.currency)}</span>
                   </div>
                 </div>
               </div>

@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase/client';
 import {
   ArrowRight, Calendar, MapPin, Users, BarChart3, Ticket, Share2,
   Globe, Star, CheckCircle2, ChevronRight, Mic2, BookOpen, Building2,
@@ -8,53 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 
-// ---- DEMO EVENTS DATA ----
-const featuredEvents = [
-  {
-    id: '1',
-    title: 'FutureTech Summit 2026',
-    type: 'Conference',
-    date: 'Mar 12–14, 2026',
-    location: 'San Francisco, CA',
-    image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&auto=format&fit=crop&q=80',
-    price: 'From $199',
-    attendees: '2,400',
-    badge: 'Featured',
-  },
-  {
-    id: '2',
-    title: 'Global Innovation Symposium',
-    type: 'Symposium',
-    date: 'Apr 8, 2026',
-    location: 'London, UK',
-    image: 'https://images.unsplash.com/photo-1591115765373-5207764f72e7?w=600&auto=format&fit=crop&q=80',
-    price: 'From £89',
-    attendees: '980',
-    badge: 'Trending',
-  },
-  {
-    id: '3',
-    title: 'Colombo Symphony Night',
-    type: 'Concert',
-    date: 'Feb 28, 2026',
-    location: 'Colombo, Sri Lanka',
-    image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&auto=format&fit=crop&q=80',
-    price: 'From LKR 3,500',
-    attendees: '1,800',
-    badge: 'Selling Fast',
-  },
-  {
-    id: '4',
-    title: 'Digital Business Forum',
-    type: 'Corporate',
-    date: 'May 5, 2026',
-    location: 'Dubai, UAE',
-    image: 'https://images.unsplash.com/photo-1515169067868-5387ec356754?w=600&auto=format&fit=crop&q=80',
-    price: 'From AED 350',
-    attendees: '650',
-    badge: null,
-  },
-];
+// Removed mock events in favor of live query
 
 const categories = [
   { label: 'Concerts', icon: Music, href: '/discover?type=concert', color: 'bg-rose-50 text-rose-600' },
@@ -144,6 +100,21 @@ const stats = [
 ];
 
 export default function HomePage() {
+  const [featuredEvents, setFeaturedEvents] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      const { data } = await supabase
+        .from('events')
+        .select('*, event_locations(city, country), ticket_types(price)')
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+        .limit(4);
+      if (data) setFeaturedEvents(data);
+    };
+    fetchEvents();
+  }, []);
+
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
@@ -320,28 +291,30 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {featuredEvents.map((event) => (
+            {featuredEvents.map((event) => {
+              const location = event.event_locations ? `${event.event_locations.city || ''}, ${event.event_locations.country || ''}` : 'Online';
+              const minPrice = event.ticket_types?.length 
+                ? Math.min(...event.ticket_types.map((t: any) => t.price))
+                : 0;
+              const priceDisplay = minPrice === 0 ? 'Free' : `From ${event.currency || '$'}${minPrice}`;
+              
+              return (
               <Link
                 key={event.id}
-                to={`/event/${event.id}`}
+                to={`/event/${event.slug}`}
                 className="group bg-white border border-neutral-200 rounded-xl overflow-hidden hover:shadow-lg hover:border-neutral-300 transition-all duration-200"
               >
                 <div className="relative h-44 overflow-hidden">
                   <img
-                    src={event.image}
+                    src={event.cover_image_url || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&auto=format&fit=crop&q=80'}
                     alt={event.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
-                  {event.badge && (
-                    <div className="absolute top-3 left-3 px-2 py-0.5 bg-white/95 border border-neutral-200 rounded-full text-xs font-semibold text-neutral-700">
-                      {event.badge}
-                    </div>
-                  )}
                 </div>
                 <div className="p-4">
                   <div className="mb-2">
                     <span className="text-xs font-medium text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full">
-                      {event.type}
+                      {event.event_type}
                     </span>
                   </div>
                   <h3 className="font-semibold text-neutral-900 text-sm leading-snug mb-2 group-hover:text-brand-600 transition-colors">
@@ -350,24 +323,24 @@ export default function HomePage() {
                   <div className="space-y-1 mb-3">
                     <div className="flex items-center gap-1.5 text-xs text-neutral-500">
                       <Calendar className="w-3.5 h-3.5 shrink-0" />
-                      {event.date}
+                      {new Date(event.start_date).toLocaleDateString()}
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-neutral-500">
                       <MapPin className="w-3.5 h-3.5 shrink-0" />
-                      {event.location}
+                      {location.replace(/^, | , $/g, '') || 'Online'}
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-neutral-500">
                       <Users className="w-3.5 h-3.5 shrink-0" />
-                      {event.attendees} attendees
+                      {event.max_capacity || 'Unlimited'} capacity
                     </div>
                   </div>
                   <div className="pt-3 border-t border-neutral-100 flex items-center justify-between">
-                    <span className="text-sm font-semibold text-neutral-900">{event.price}</span>
+                    <span className="text-sm font-semibold text-neutral-900">{priceDisplay}</span>
                     <span className="text-xs text-brand-600 font-medium group-hover:underline">Book Now →</span>
                   </div>
                 </div>
               </Link>
-            ))}
+            )})}
           </div>
         </div>
       </section>

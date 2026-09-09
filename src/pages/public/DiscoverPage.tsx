@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase/client';
 import { Search, MapPin, Calendar, SlidersHorizontal, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Navbar } from '@/components/layout/Navbar';
@@ -13,72 +14,8 @@ const EVENT_TYPES = [
   'Seminar', 'Corporate', 'Exhibition', 'Networking', 'University', 'Community',
 ];
 
-const MOCK_EVENTS = [
-  {
-    id: '1', slug: 'futuretech-summit-2026',
-    title: 'FutureTech Summit 2026', type: 'Conference',
-    date: 'Mar 12–14, 2026', location: 'San Francisco, CA', country: 'USA',
-    image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&auto=format&fit=crop&q=80',
-    price: 'From $199', isFree: false, attendees: 2400, capacity: 2500,
-    organizer: 'TechVentures Inc.',
-  },
-  {
-    id: '2', slug: 'global-innovation-symposium',
-    title: 'Global Innovation Symposium', type: 'Symposium',
-    date: 'Apr 8, 2026', location: 'London, UK', country: 'UK',
-    image: 'https://images.unsplash.com/photo-1591115765373-5207764f72e7?w=600&auto=format&fit=crop&q=80',
-    price: 'From £89', isFree: false, attendees: 980, capacity: 1200,
-    organizer: 'Global Innovate Forum',
-  },
-  {
-    id: '3', slug: 'colombo-symphony-night',
-    title: 'Colombo Symphony Night', type: 'Concert',
-    date: 'Feb 28, 2026', location: 'Colombo, LK', country: 'Sri Lanka',
-    image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&auto=format&fit=crop&q=80',
-    price: 'From LKR 3,500', isFree: false, attendees: 1800, capacity: 2000,
-    organizer: 'Symphony Sri Lanka',
-  },
-  {
-    id: '4', slug: 'digital-business-forum',
-    title: 'Digital Business Forum', type: 'Corporate',
-    date: 'May 5, 2026', location: 'Dubai, UAE', country: 'UAE',
-    image: 'https://images.unsplash.com/photo-1515169067868-5387ec356754?w=600&auto=format&fit=crop&q=80',
-    price: 'From AED 350', isFree: false, attendees: 650, capacity: 800,
-    organizer: 'BusinessBridge MENA',
-  },
-  {
-    id: '5', slug: 'university-research-conference-2026',
-    title: 'University Research Conference 2026', type: 'University',
-    date: 'Jun 10–12, 2026', location: 'Singapore', country: 'Singapore',
-    image: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=600&auto=format&fit=crop&q=80',
-    price: 'Free', isFree: true, attendees: 400, capacity: 500,
-    organizer: 'NUS Research Office',
-  },
-  {
-    id: '6', slug: 'startup-networking-night',
-    title: 'Startup Networking Night', type: 'Networking',
-    date: 'Mar 22, 2026', location: 'Berlin, Germany', country: 'Germany',
-    image: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=600&auto=format&fit=crop&q=80',
-    price: 'From €25', isFree: false, attendees: 180, capacity: 200,
-    organizer: 'Berlin Startup Community',
-  },
-  {
-    id: '7', slug: 'design-systems-workshop',
-    title: 'Design Systems Workshop', type: 'Workshop',
-    date: 'Apr 3, 2026', location: 'Toronto, Canada', country: 'Canada',
-    image: 'https://images.unsplash.com/photo-1558403194-611308249627?w=600&auto=format&fit=crop&q=80',
-    price: 'From CAD 89', isFree: false, attendees: 40, capacity: 50,
-    organizer: 'DesignCraft Studio',
-  },
-  {
-    id: '8', slug: 'asia-pacific-exhibition-2026',
-    title: 'Asia Pacific Exhibition 2026', type: 'Exhibition',
-    date: 'Jul 8–12, 2026', location: 'Tokyo, Japan', country: 'Japan',
-    image: 'https://images.unsplash.com/photo-1559223607-a43c990c692c?w=600&auto=format&fit=crop&q=80',
-    price: 'From ¥5,000', isFree: false, attendees: 12000, capacity: 15000,
-    organizer: 'APAC Events Group',
-  },
-];
+// MOCK_EVENTS removed in favor of live query
+
 
 export default function DiscoverPage() {
   const [search, setSearch] = useState('');
@@ -86,14 +23,37 @@ export default function DiscoverPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [freeOnly, setFreeOnly] = useState(false);
 
-  const filtered = MOCK_EVENTS.filter((e) => {
+  const [events, setEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      const { data } = await supabase
+        .from('events')
+        .select('*, event_locations(city, country), ticket_types(price)')
+        .eq('status', 'published')
+        .order('start_date', { ascending: true });
+      if (data) setEvents(data);
+      setLoading(false);
+    };
+    fetchEvents();
+  }, []);
+
+  const filtered = events.filter((e) => {
+    const locationStr = e.event_locations ? `${e.event_locations.city || ''} ${e.event_locations.country || ''}` : '';
     const matchSearch =
       !search ||
       e.title.toLowerCase().includes(search.toLowerCase()) ||
-      e.location.toLowerCase().includes(search.toLowerCase()) ||
-      e.organizer.toLowerCase().includes(search.toLowerCase());
-    const matchType = activeType === 'All' || e.type === activeType;
-    const matchFree = !freeOnly || e.isFree;
+      locationStr.toLowerCase().includes(search.toLowerCase()) ||
+      (e.organizer_name || '').toLowerCase().includes(search.toLowerCase());
+      
+    // Case-insensitive type matching
+    const matchType = activeType === 'All' || e.event_type.toLowerCase() === activeType.toLowerCase();
+    
+    // Check if free
+    const isFree = e.ticket_types?.length ? Math.min(...e.ticket_types.map((t: any) => t.price)) === 0 : false;
+    const matchFree = !freeOnly || isFree;
+    
     return matchSearch && matchType && matchFree;
   });
 
@@ -179,7 +139,11 @@ export default function DiscoverPage() {
           </p>
 
           {/* Grid */}
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-20">
+              <p className="text-neutral-500">Loading events...</p>
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="text-center py-20">
               <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Search className="w-7 h-7 text-neutral-300" />
@@ -192,7 +156,15 @@ export default function DiscoverPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {filtered.map((event) => (
+              {filtered.map((event) => {
+                const location = event.event_locations ? `${event.event_locations.city || ''}, ${event.event_locations.country || ''}` : 'Online';
+                const minPrice = event.ticket_types?.length 
+                  ? Math.min(...event.ticket_types.map((t: any) => t.price))
+                  : 0;
+                const isFree = minPrice === 0;
+                const priceDisplay = isFree ? 'Free' : `From ${event.currency || '$'}${minPrice}`;
+                
+                return (
                 <Link
                   key={event.id}
                   to={`/event/${event.slug}`}
@@ -200,43 +172,43 @@ export default function DiscoverPage() {
                 >
                   <div className="relative h-44 overflow-hidden bg-neutral-100">
                     <img
-                      src={event.image}
+                      src={event.cover_image_url || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&auto=format&fit=crop&q=80'}
                       alt={event.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    {event.isFree && (
+                    {isFree && (
                       <div className="absolute top-3 left-3">
                         <Badge variant="success">Free</Badge>
                       </div>
                     )}
                   </div>
                   <div className="p-4">
-                    <span className="text-xs font-medium text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full">
-                      {event.type}
+                    <span className="text-xs font-medium text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full capitalize">
+                      {event.event_type}
                     </span>
                     <h3 className="mt-2 font-semibold text-neutral-900 text-sm leading-snug group-hover:text-brand-600 transition-colors">
                       {event.title}
                     </h3>
                     <div className="mt-2 space-y-1">
                       <div className="flex items-center gap-1.5 text-xs text-neutral-500">
-                        <Calendar className="w-3.5 h-3.5 shrink-0" /> {event.date}
+                        <Calendar className="w-3.5 h-3.5 shrink-0" /> {new Date(event.start_date).toLocaleDateString()}
                       </div>
                       <div className="flex items-center gap-1.5 text-xs text-neutral-500">
-                        <MapPin className="w-3.5 h-3.5 shrink-0" /> {event.location}
+                        <MapPin className="w-3.5 h-3.5 shrink-0" /> {location.replace(/^, | , $/g, '') || 'Online'}
                       </div>
                     </div>
                     <div className="mt-3 pt-3 border-t border-neutral-100 flex items-center justify-between">
-                      <span className="text-sm font-semibold text-neutral-900">{event.price}</span>
+                      <span className="text-sm font-semibold text-neutral-900">{priceDisplay}</span>
                       <div className="w-24 bg-neutral-100 rounded-full h-1.5">
                         <div
                           className="bg-brand-500 h-1.5 rounded-full"
-                          style={{ width: `${Math.round((event.attendees / event.capacity) * 100)}%` }}
+                          style={{ width: `${event.max_capacity ? Math.round((0 / event.max_capacity) * 100) : 0}%` }}
                         />
                       </div>
                     </div>
                   </div>
                 </Link>
-              ))}
+              )})}
             </div>
           )}
         </div>
