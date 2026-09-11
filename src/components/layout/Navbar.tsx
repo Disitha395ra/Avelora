@@ -47,24 +47,13 @@ export function Navbar() {
         <div className="flex items-center justify-between h-[68px]">
 
           {/* ── Logo ──────────────────────────────────── */}
-          <Link to="/" className="flex items-center gap-3 shrink-0 group">
-            <img
-              src="/logo.png"
-              alt="Avelora"
-              className="h-9 w-auto object-contain"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                (e.currentTarget.nextElementSibling as HTMLElement)?.classList.remove('hidden');
-              }}
-            />
-            <div className="hidden items-center gap-2.5">
-              <div className="w-8 h-8 rounded-md bg-brand-600 flex items-center justify-center">
-                <span className="text-white font-bold text-sm tracking-tight">A</span>
-              </div>
-              <span className="text-[1.1rem] font-serif font-bold text-neutral-900 tracking-tight">
-                Avelora
-              </span>
+          <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
+            <div className="w-8 h-8 rounded-md bg-brand-600 flex items-center justify-center">
+              <span className="text-white font-bold text-sm tracking-tight">A</span>
             </div>
+            <span className="text-[1.1rem] font-serif font-bold text-neutral-900 tracking-tight">
+              Avelora
+            </span>
           </Link>
 
           {/* ── Desktop Nav ───────────────────────────── */}

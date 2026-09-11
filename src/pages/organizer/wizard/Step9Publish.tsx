@@ -12,7 +12,7 @@ interface Props {
   data: WizardData;
 }
 
-export function Step8Publish({ data }: Props) {
+export function Step9Publish({ data }: Props) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [publishing, setPublishing] = useState(false);
@@ -90,7 +90,7 @@ export function Step8Publish({ data }: Props) {
 
       // ── Create location ──────────────────────────────────────────
       if (data.venue_type === 'physical' || data.venue_type === 'hybrid') {
-        if (data.venue_name || data.city || data.address) {
+        if (data.venue_name || data.city || data.address || data.latitude) {
           const { error: locError } = await supabase.from('event_locations').insert({
             event_id: event.id,
             venue_name: data.venue_name || null,
@@ -98,6 +98,8 @@ export function Step8Publish({ data }: Props) {
             city: data.city || null,
             state: data.state || null,
             country: data.country || null,
+            latitude: data.latitude || null,
+            longitude: data.longitude || null,
           });
           if (locError) console.warn('Location insert warning:', locError.message);
         }
@@ -110,6 +112,37 @@ export function Step8Publish({ data }: Props) {
             online_platform: data.online_platform || null,
           }, { onConflict: 'event_id' });
         }
+      }
+
+      // ── Create speakers ──────────────────────────────────────────
+      if (data.speakers?.length > 0) {
+        const { error: speakerError } = await supabase.from('event_speakers').insert(
+          data.speakers.map((s, i) => ({
+            event_id: event.id,
+            name: s.name,
+            title: s.title || null,
+            organization: s.org || null,
+            avatar_url: s.avatar || null,
+            sort_order: i
+          }))
+        );
+        if (speakerError) console.warn('Speaker insert warning:', speakerError.message);
+      }
+
+      // ── Create schedule ──────────────────────────────────────────
+      if (data.schedule?.length > 0) {
+        const { error: scheduleError } = await supabase.from('event_schedules').insert(
+          data.schedule.map((s, i) => ({
+            event_id: event.id,
+            title: s.title,
+            start_time: s.time || '00:00',
+            location: s.location || null,
+            track: s.speaker || null, // Storing speaker string in track temporarily or wait, we can store it in description. Let's store in description.
+            description: s.speaker ? `Speaker: ${s.speaker}` : null,
+            sort_order: i
+          }))
+        );
+        if (scheduleError) console.warn('Schedule insert warning:', scheduleError.message);
       }
 
       // ── Create ticket types ──────────────────────────────────────

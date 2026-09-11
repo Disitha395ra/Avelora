@@ -13,6 +13,16 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { formatCurrency } from '@/utils';
 import { cn } from '@/utils';
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import L from 'leaflet';
+
+// Fix Leaflet's default icon path issues
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
 
 
 // Mock removed in favor of live query
@@ -32,19 +42,25 @@ export default function EventPage() {
         .single();
       
       if (data) {
+        // We fetch speakers and schedule
+        const [{ data: speakers }, { data: schedule }] = await Promise.all([
+          supabase.from('event_speakers').select('*').eq('event_id', data.id).order('sort_order'),
+          supabase.from('event_schedules').select('*').eq('event_id', data.id).order('sort_order')
+        ]);
+
         setEvent({
           ...data,
           location: data.event_locations || {},
           ticket_types: data.ticket_types || [],
-          schedule: [],
-          speakers: []
+          schedule: schedule || [],
+          speakers: speakers || []
         });
       }
       setLoading(false);
     };
     fetchEvent();
   }, [slug]);
-  const [quantities, setQuantities] = useState<Record<string, number>>({ '1': 0, '2': 0, '3': 0 });
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [, setBookingOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'about' | 'schedule' | 'speakers' | 'tickets' | 'venue'>('about');
 
@@ -165,16 +181,20 @@ export default function EventPage() {
                   {event.schedule?.map((item: any, i: number) => (
                     <div key={i} className="flex gap-4 p-4 bg-white border border-neutral-200 rounded-xl hover:border-neutral-300 transition-colors">
                       <div className="w-14 shrink-0">
-                        <span className="text-sm font-bold text-brand-600">{item.time}</span>
+                        <span className="text-sm font-bold text-brand-600">
+                          {item.start_time.substring(0, 5)}
+                        </span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-neutral-900">{item.title}</p>
-                        {item.speaker && (
-                          <p className="text-xs text-brand-600 mt-0.5">{item.speaker}</p>
+                        {item.description && (
+                          <p className="text-xs text-brand-600 mt-0.5">{item.description}</p>
                         )}
-                        <p className="text-xs text-neutral-400 mt-0.5 flex items-center gap-1">
-                          <MapPin className="w-3 h-3" /> {item.location}
-                        </p>
+                        {item.location && (
+                          <p className="text-xs text-neutral-400 mt-0.5 flex items-center gap-1">
+                            <MapPin className="w-3 h-3" /> {item.location}
+                          </p>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -186,13 +206,13 @@ export default function EventPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {event.speakers?.map((speaker: any) => (
                     <div key={speaker.id} className="flex items-center gap-3 p-4 bg-white border border-neutral-200 rounded-xl hover:shadow-sm transition-shadow">
-                      <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-600 font-semibold text-sm shrink-0">
-                        {speaker.avatar}
+                      <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-600 font-semibold text-sm shrink-0 overflow-hidden">
+                        {speaker.avatar_url?.length <= 3 ? speaker.avatar_url : 'SP'}
                       </div>
                       <div>
                         <p className="font-semibold text-neutral-900 text-sm">{speaker.name}</p>
                         <p className="text-xs text-neutral-500">{speaker.title}</p>
-                        <p className="text-xs text-brand-600">{speaker.org}</p>
+                        <p className="text-xs text-brand-600">{speaker.organization}</p>
                       </div>
                     </div>
                   ))}
@@ -254,21 +274,39 @@ export default function EventPage() {
                         </p>
                         <p className="text-sm text-neutral-500">{event.location.country}</p>
                         <a
-                          href={`https://maps.google.com/?q=${encodeURIComponent(event.location.venue_name + ', ' + event.location.city)}`}
+                          href={event.location.latitude && event.location.longitude ? 
+                            `https://www.google.com/maps/dir/?api=1&destination=${event.location.latitude},${event.location.longitude}` 
+                            : `https://maps.google.com/?q=${encodeURIComponent(event.location.venue_name + ', ' + event.location.city)}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="mt-3 inline-flex items-center gap-1.5 text-sm text-brand-600 hover:text-brand-700 font-medium"
                         >
-                          <Globe className="w-3.5 h-3.5" /> View on Google Maps
+                          <Globe className="w-3.5 h-3.5" /> Get Directions
                           <ExternalLink className="w-3 h-3" />
                         </a>
                       </div>
                     </div>
                   </div>
-                  {/* Map placeholder */}
-                  <div className="h-48 bg-neutral-100 rounded-xl flex items-center justify-center border border-neutral-200">
-                    <p className="text-sm text-neutral-400">Interactive map loads with Google Maps API key</p>
-                  </div>
+                  {/* Map */}
+                  {event.location.latitude && event.location.longitude ? (
+                    <div className="h-64 bg-neutral-100 rounded-xl overflow-hidden border border-neutral-200 relative z-0">
+                      <MapContainer 
+                        center={[event.location.latitude, event.location.longitude]} 
+                        zoom={15} 
+                        style={{ height: '100%', width: '100%', zIndex: 0 }}
+                      >
+                        <TileLayer
+                          attribution='&copy; OpenStreetMap'
+                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
+                        <Marker position={[event.location.latitude, event.location.longitude]} />
+                      </MapContainer>
+                    </div>
+                  ) : (
+                    <div className="h-48 bg-neutral-100 rounded-xl flex items-center justify-center border border-neutral-200">
+                      <p className="text-sm text-neutral-400">Map unavailable</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

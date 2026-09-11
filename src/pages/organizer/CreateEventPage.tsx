@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/Button';
 import { cn } from '@/utils';
 import { Step1BasicInfo } from './wizard/Step1BasicInfo';
 import { Step2DateTime } from './wizard/Step2DateTime';
-import { Step3Location } from './wizard/Step3Location';
-import { Step4Seating } from './wizard/Step4Seating';
-import { Step5Tickets } from './wizard/Step5Tickets';
-import { Step6Settings } from './wizard/Step6Settings';
-import { Step7Preview } from './wizard/Step7Preview';
-import { Step8Publish } from './wizard/Step8Publish';
+import { Step3Agenda } from './wizard/Step3Agenda';
+import { Step4Location } from './wizard/Step4Location';
+import { Step5Seating } from './wizard/Step5Seating';
+import { Step6Tickets } from './wizard/Step6Tickets';
+import { Step7Settings } from './wizard/Step7Settings';
+import { Step8Preview } from './wizard/Step8Preview';
+import { Step9Publish } from './wizard/Step9Publish';
 
 export interface WizardData {
   // Step 1
@@ -26,16 +27,21 @@ export interface WizardData {
   end_date: string;
   end_time: string;
   timezone: string;
-  // Step 3
+  // Step 3 (Agenda & Speakers)
+  speakers: Array<{ name: string; title: string; org: string; avatar: string }>;
+  schedule: Array<{ time: string; title: string; speaker: string; location: string }>;
+  // Step 4
   venue_type: 'physical' | 'online' | 'hybrid';
   venue_name: string;
   address: string;
   city: string;
   state: string;
   country: string;
+  latitude: number | null;
+  longitude: number | null;
   online_url: string;
   online_platform: string;
-  // Step 4
+  // Step 5
   seating_type: 'general_admission' | 'reserved' | 'table' | 'custom';
   seating_layout: {
     gridWidth: number;
@@ -54,13 +60,13 @@ export interface WizardData {
       label: string;
     }>;
   };
-  // Step 5
+  // Step 6
   ticket_types: Array<{
     name: string; description: string; price: number;
     quantity: number; sale_start: string; sale_end: string;
   }>;
   currency: string;
-  // Step 6
+  // Step 7
   max_capacity: number | null;
   booking_deadline: string;
   allow_cancellations: boolean;
@@ -75,12 +81,13 @@ export interface WizardData {
 const STEPS = [
   { number: 1, label: 'Basic Info', shortLabel: 'Info' },
   { number: 2, label: 'Date & Time', shortLabel: 'Date' },
-  { number: 3, label: 'Location', shortLabel: 'Location' },
-  { number: 4, label: 'Seating', shortLabel: 'Seating' },
-  { number: 5, label: 'Tickets', shortLabel: 'Tickets' },
-  { number: 6, label: 'Settings', shortLabel: 'Settings' },
-  { number: 7, label: 'Preview', shortLabel: 'Preview' },
-  { number: 8, label: 'Publish', shortLabel: 'Publish' },
+  { number: 3, label: 'Agenda', shortLabel: 'Agenda' },
+  { number: 4, label: 'Location', shortLabel: 'Location' },
+  { number: 5, label: 'Seating', shortLabel: 'Seating' },
+  { number: 6, label: 'Tickets', shortLabel: 'Tickets' },
+  { number: 7, label: 'Settings', shortLabel: 'Settings' },
+  { number: 8, label: 'Preview', shortLabel: 'Preview' },
+  { number: 9, label: 'Publish', shortLabel: 'Publish' },
 ];
 
 const defaultData: WizardData = {
@@ -95,12 +102,16 @@ const defaultData: WizardData = {
   end_date: '',
   end_time: '17:00',
   timezone: 'UTC',
+  speakers: [],
+  schedule: [],
   venue_type: 'physical',
   venue_name: '',
   address: '',
   city: '',
   state: '',
   country: '',
+  latitude: null,
+  longitude: null,
   online_url: '',
   online_platform: '',
   seating_type: 'general_admission',
@@ -141,7 +152,7 @@ export default function CreateEventPage() {
 
 
   const goNext = () => {
-    if (currentStep < 8) setCurrentStep((s) => s + 1);
+    if (currentStep < 9) setCurrentStep((s) => s + 1);
   };
 
   const goBack = () => {
@@ -153,12 +164,13 @@ export default function CreateEventPage() {
     switch (currentStep) {
       case 1: return <Step1BasicInfo {...props} />;
       case 2: return <Step2DateTime {...props} />;
-      case 3: return <Step3Location {...props} />;
-      case 4: return <Step4Seating {...props} />;
-      case 5: return <Step5Tickets {...props} />;
-      case 6: return <Step6Settings {...props} />;
-      case 7: return <Step7Preview data={data} />;
-      case 8: return <Step8Publish data={data} />;
+      case 3: return <Step3Agenda {...props} />;
+      case 4: return <Step4Location {...props} />;
+      case 5: return <Step5Seating {...props} />;
+      case 6: return <Step6Tickets {...props} />;
+      case 7: return <Step7Settings {...props} />;
+      case 8: return <Step8Preview data={data} />;
+      case 9: return <Step9Publish data={data} />;
       default: return null;
     }
   };
@@ -250,7 +262,7 @@ export default function CreateEventPage() {
           Back
         </Button>
 
-        {currentStep < 7 ? (
+        {currentStep < 8 ? (
           <Button
             onClick={goNext}
             disabled={!stepValid[currentStep]}
@@ -259,7 +271,7 @@ export default function CreateEventPage() {
           >
             Continue
           </Button>
-        ) : currentStep === 7 ? (
+        ) : currentStep === 8 ? (
           <Button
             onClick={goNext}
             icon={<ChevronRight className="w-4 h-4" />}

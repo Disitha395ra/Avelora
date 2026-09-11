@@ -27,7 +27,7 @@ export default function BookingPage() {
     ?.map((t: any) => ({ ...t, quantity: quantities[t.id] })) || [];
 
   useEffect(() => {
-    if (!event || selectedTickets.length === 0) {
+    if (!event || (selectedTickets.length === 0 && event?.seating_type !== 'reserved')) {
       navigate('/discover');
     }
   }, [event, navigate, selectedTickets]);
@@ -59,7 +59,7 @@ export default function BookingPage() {
     if (isReserved) {
       setAttendees(
         selectedSeats.map((s: any) => ({
-          first_name: '', last_name: '', email: '', phone: '', seat_id: s.id, ticket_type_id: selectedTickets[0]?.id 
+          first_name: '', last_name: '', email: '', phone: '', seat_id: s.id, ticket_type_id: event?.ticket_types[0]?.id 
         }))
       );
     } else {
@@ -71,7 +71,7 @@ export default function BookingPage() {
         )
       );
     }
-  }, [selectedSeats, selectedTickets, isReserved]);
+  }, [selectedSeats, selectedTickets, isReserved, event]);
 
   const updateAttendee = (i: number, field: string, value: string) => {
     setAttendees((prev: any[]) => prev.map((a: any, idx: number) => idx === i ? { ...a, [field]: value } : a));
@@ -89,8 +89,8 @@ export default function BookingPage() {
     setProcessing(true);
     
     try {
-      const items = isReserved && selectedTickets.length > 0
-        ? [{ ticket_type_id: selectedTickets[0].id, quantity: selectedSeats.length }]
+      const items = isReserved && event?.ticket_types?.length > 0
+        ? [{ ticket_type_id: event.ticket_types[0].id, quantity: selectedSeats.length }]
         : selectedTickets.map((t: any) => ({
             ticket_type_id: t.id,
             quantity: t.quantity
@@ -141,7 +141,7 @@ export default function BookingPage() {
     }
   };
 
-  if (!event || selectedTickets.length === 0) return null;
+  if (!event || (selectedTickets.length === 0 && event?.seating_type !== 'reserved')) return null;
 
   return (
     <div className="min-h-screen bg-neutral-50">

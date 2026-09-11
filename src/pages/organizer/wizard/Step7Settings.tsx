@@ -8,7 +8,7 @@ interface Props {
   onValid: (v: boolean) => void;
 }
 
-export function Step6Settings({ data, updateData, onValid }: Props) {
+export function Step7Settings({ data, updateData, onValid }: Props) {
   useEffect(() => {
     onValid(!!data.contact_email);
   }, [data.contact_email]);

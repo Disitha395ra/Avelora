@@ -45,7 +45,7 @@ const SECTION_COLORS = [
   '#c9a84c', '#3b82f6', '#ef4444', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899', '#14b8a6',
 ];
 
-export function Step4Seating({ data, updateData, onValid }: Props) {
+export function Step5Seating({ data, updateData, onValid }: Props) {
   useEffect(() => {
     if (data.seating_type === 'reserved') {
       const isValid = data.seating_layout?.sections?.length > 0 && data.seating_layout?.cells?.length > 0;

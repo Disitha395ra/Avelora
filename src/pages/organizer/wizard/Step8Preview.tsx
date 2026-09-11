@@ -7,7 +7,7 @@ interface Props {
   data: WizardData;
 }
 
-export function Step7Preview({ data }: Props) {
+export function Step8Preview({ data }: Props) {
   return (
     <div>
       <div className="mb-6">

@@ -11,7 +11,7 @@ interface Props {
   onValid: (v: boolean) => void;
 }
 
-export function Step5Tickets({ data, updateData, onValid }: Props) {
+export function Step6Tickets({ data, updateData, onValid }: Props) {
   const isReserved = data.seating_type === 'reserved';
   const hasSections = isReserved && (data.seating_layout?.sections?.length ?? 0) > 0;
 

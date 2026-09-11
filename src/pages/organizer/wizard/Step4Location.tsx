@@ -1,8 +1,18 @@
 import { useEffect } from 'react';
 import { MapPin, Globe, Wifi } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import L from 'leaflet';
 import { Input } from '@/components/ui/Input';
 import { cn } from '@/utils';
 import type { WizardData } from '../CreateEventPage';
+
+// Fix Leaflet's default icon path issues
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
 
 interface Props {
   data: WizardData;
@@ -16,16 +26,32 @@ const VENUE_TYPES = [
   { value: 'hybrid', label: 'Hybrid', icon: Globe, description: 'Both in-person and online attendance' },
 ] as const;
 
-export function Step3Location({ data, updateData, onValid }: Props) {
+export function Step4Location({ data, updateData, onValid }: Props) {
   useEffect(() => {
     if (data.venue_type === 'physical') {
-      onValid(!!data.city && !!data.country);
+      onValid(!!data.city && !!data.country && !!data.latitude && !!data.longitude);
     } else if (data.venue_type === 'online') {
       onValid(true);
     } else {
-      onValid(!!data.city);
+      onValid(!!data.city && !!data.latitude && !!data.longitude);
     }
-  }, [data.venue_type, data.city, data.country, data.online_url]);
+  }, [data.venue_type, data.city, data.country, data.online_url, data.latitude, data.longitude]);
+
+  // Default center if no latitude/longitude is set (e.g., London or anywhere)
+  const defaultCenter: [number, number] = [51.505, -0.09];
+  const position: [number, number] | null = data.latitude && data.longitude ? [data.latitude, data.longitude] : null;
+
+  function LocationMarker() {
+    useMapEvents({
+      click(e) {
+        updateData({ latitude: e.latlng.lat, longitude: e.latlng.lng });
+      },
+    });
+
+    return position === null ? null : (
+      <Marker position={position}></Marker>
+    );
+  }
 
   return (
     <div>
@@ -98,6 +124,27 @@ export function Step3Location({ data, updateData, onValid }: Props) {
             onChange={(e) => updateData({ country: e.target.value })}
             required
           />
+
+          <div className="pt-2">
+            <p className="text-sm font-semibold text-neutral-900 mb-2">Pinpoint Location on Map</p>
+            <p className="text-xs text-neutral-500 mb-3">Click on the map to set the exact coordinates for the venue. This helps attendees get directions.</p>
+            <div className="h-[300px] w-full rounded-xl overflow-hidden border border-neutral-200 z-0 relative">
+              <MapContainer 
+                center={position || defaultCenter} 
+                zoom={position ? 15 : 2} 
+                style={{ height: '100%', width: '100%', zIndex: 0 }}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <LocationMarker />
+              </MapContainer>
+            </div>
+            {!position && (
+              <p className="text-xs text-orange-600 mt-2 font-medium">Please select a location on the map.</p>
+            )}
+          </div>
         </div>
       )}
 
