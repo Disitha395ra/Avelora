@@ -1,121 +1,153 @@
 import { Link } from 'react-router-dom';
-import { Globe, Mail } from 'lucide-react';
+import { Mail, Globe, MessageCircle, Video, Send } from 'lucide-react';
 
+const sections = [
+  {
+    title: 'Platform',
+    links: [
+      { label: 'Discover Events', href: '/discover' },
+      { label: 'Create Event', href: '/organizer/events/create' },
+      { label: 'Pricing', href: '/pricing' },
+      { label: 'Enterprise', href: '/enterprise' },
+    ],
+  },
+  {
+    title: 'Event Types',
+    links: [
+      { label: 'Conferences', href: '/discover?type=conference' },
+      { label: 'Concerts', href: '/discover?type=concert' },
+      { label: 'Workshops', href: '/discover?type=workshop' },
+      { label: 'Exhibitions', href: '/discover?type=exhibition' },
+      { label: 'Corporate', href: '/discover?type=corporate' },
+    ],
+  },
+  {
+    title: 'Resources',
+    links: [
+      { label: 'Help Center', href: '/help' },
+      { label: 'Documentation', href: '/docs' },
+      { label: 'API Reference', href: '/api' },
+      { label: 'Status', href: '/status' },
+    ],
+  },
+  {
+    title: 'Company',
+    links: [
+      { label: 'About', href: '/about' },
+      { label: 'Blog', href: '/blog' },
+      { label: 'Careers', href: '/careers' },
+      { label: 'Contact', href: '/contact' },
+    ],
+  },
+];
+
+const socials = [
+  { icon: Globe, href: '#', label: 'Website' },
+  { icon: MessageCircle, href: '#', label: 'Twitter/X' },
+  { icon: Send, href: '#', label: 'Telegram' },
+  { icon: Video, href: '#', label: 'YouTube' },
+  { icon: Mail, href: 'mailto:hello@avelora.com', label: 'Email' },
+];
 
 export function Footer() {
-  const currentYear = new Date().getFullYear();
-
-  const sections = [
-    {
-      title: 'Platform',
-      links: [
-        { label: 'Discover Events', href: '/discover' },
-        { label: 'Create Event', href: '/organizer/events/create' },
-        { label: 'Pricing', href: '/pricing' },
-        { label: 'Enterprise', href: '/enterprise' },
-      ],
-    },
-    {
-      title: 'Event Types',
-      links: [
-        { label: 'Conferences', href: '/discover?type=conference' },
-        { label: 'Concerts', href: '/discover?type=concert' },
-        { label: 'Workshops', href: '/discover?type=workshop' },
-        { label: 'Exhibitions', href: '/discover?type=exhibition' },
-        { label: 'Corporate Events', href: '/discover?type=corporate' },
-      ],
-    },
-    {
-      title: 'Resources',
-      links: [
-        { label: 'Help Center', href: '/help' },
-        { label: 'Documentation', href: '/docs' },
-        { label: 'API Reference', href: '/api' },
-        { label: 'Status', href: '/status' },
-      ],
-    },
-    {
-      title: 'Company',
-      links: [
-        { label: 'About', href: '/about' },
-        { label: 'Blog', href: '/blog' },
-        { label: 'Careers', href: '/careers' },
-        { label: 'Contact', href: '/contact' },
-      ],
-    },
-  ];
+  const year = new Date().getFullYear();
 
   return (
-    <footer className="bg-neutral-900 text-neutral-400">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
-        {/* Top */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 pb-12 border-b border-neutral-800">
-          {/* Brand */}
-          <div className="col-span-2 md:col-span-1">
-            <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">A</span>
+    <footer className="bg-neutral-900">
+      {/* Top band */}
+      <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-16 pb-12">
+        <div className="grid grid-cols-12 gap-10">
+
+          {/* Brand column — 4 cols */}
+          <div className="col-span-12 md:col-span-4">
+            <Link to="/" className="inline-flex items-center gap-2.5 mb-5 group">
+              <div className="w-9 h-9 rounded-lg bg-brand-600 flex items-center justify-center">
+                <span className="text-white font-bold text-base">A</span>
               </div>
-              <span className="text-lg font-bold text-white">Avelora</span>
+              <span className="font-serif text-xl text-white font-bold tracking-tight">Avelora</span>
             </Link>
-            <p className="text-sm leading-relaxed text-neutral-500 mb-6">
-              Where Experiences Come Together. The global event management platform for every occasion.
+            <p className="text-sm text-neutral-400 leading-relaxed mb-6 max-w-xs">
+              The global event management platform for every occasion — from intimate workshops to stadium concerts.
             </p>
-            <div className="flex items-center gap-3">
-              {[Globe, Mail].map((Icon, i) => (
+
+            {/* Newsletter */}
+            <div className="mb-6">
+              <p className="text-xs text-neutral-500 font-semibold uppercase tracking-wider mb-3">Stay in the loop</p>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  placeholder="Your email address"
+                  className="flex-1 bg-neutral-800 border border-neutral-700 text-white text-sm px-3.5 py-2 rounded-lg placeholder-neutral-500 focus:outline-none focus:border-brand-500 transition-colors"
+                />
+                <button className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors shrink-0">
+                  Join
+                </button>
+              </div>
+            </div>
+
+            {/* Socials */}
+            <div className="flex items-center gap-2">
+              {socials.map((s) => (
                 <a
-                  key={i}
-                  href="#"
-                  className="w-8 h-8 rounded-lg bg-neutral-800 flex items-center justify-center text-neutral-500 hover:text-white hover:bg-neutral-700 transition-colors"
+                  key={s.label}
+                  href={s.href}
+                  aria-label={s.label}
+                  className="w-8 h-8 rounded-lg bg-neutral-800 border border-neutral-700 flex items-center justify-center text-neutral-500 hover:text-white hover:border-neutral-500 transition-colors"
                 >
-                  <Icon className="w-4 h-4" />
+                  <s.icon className="w-3.5 h-3.5" />
                 </a>
               ))}
             </div>
           </div>
 
-          {/* Links */}
-          {sections.map((section) => (
-            <div key={section.title}>
-              <h3 className="text-sm font-semibold text-white mb-4">{section.title}</h3>
-              <ul className="space-y-2.5">
-                {section.links.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      to={link.href}
-                      className="text-sm text-neutral-500 hover:text-white transition-colors"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          {/* Link columns — 8 cols */}
+          <div className="col-span-12 md:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-8">
+            {sections.map((section) => (
+              <div key={section.title}>
+                <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4">
+                  {section.title}
+                </h4>
+                <ul className="space-y-2.5">
+                  {section.links.map((link) => (
+                    <li key={link.href}>
+                      <Link
+                        to={link.href}
+                        className="text-sm text-neutral-400 hover:text-white transition-colors"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
+      </div>
 
-        {/* Bottom */}
-        <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-neutral-600">
-            © {currentYear} Avelora, Inc. All rights reserved.
+      {/* Bottom bar */}
+      <div className="border-t border-neutral-800">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-neutral-600">
+            © {year} Avelora, Inc. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
-            <Link to="/privacy" className="text-sm text-neutral-600 hover:text-neutral-400 transition-colors">
-              Privacy Policy
-            </Link>
-            <Link to="/terms" className="text-sm text-neutral-600 hover:text-neutral-400 transition-colors">
-              Terms of Service
-            </Link>
-            <Link to="/cookies" className="text-sm text-neutral-600 hover:text-neutral-400 transition-colors">
-              Cookie Policy
-            </Link>
+            {['Privacy Policy', 'Terms of Service', 'Cookie Policy'].map((label) => (
+              <Link
+                key={label}
+                to={`/${label.toLowerCase().replace(/ /g, '-')}`}
+                className="text-xs text-neutral-600 hover:text-neutral-400 transition-colors"
+              >
+                {label}
+              </Link>
+            ))}
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-neutral-600">
-            <Mail className="w-3.5 h-3.5" />
-            <a href="mailto:hello@avelora.com" className="hover:text-neutral-400 transition-colors">
-              hello@avelora.com
-            </a>
-          </div>
+          <a
+            href="mailto:hello@avelora.com"
+            className="text-xs text-neutral-600 hover:text-neutral-400 transition-colors flex items-center gap-1.5"
+          >
+            <Mail className="w-3.5 h-3.5" /> hello@avelora.com
+          </a>
         </div>
       </div>
     </footer>
