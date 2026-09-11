@@ -29,13 +29,40 @@ export function SeatingMap({ eventId, onSeatSelect }: SeatingMapProps) {
     const fetchSeating = async () => {
       setLoading(true);
       
-      const [seatsRes, eventRes] = await Promise.all([
-        supabase.from('seats').select('*').eq('event_id', eventId),
-        supabase.from('events').select('layout_metadata').eq('id', eventId).single()
-      ]);
+      try {
+        const { data: eventData } = await supabase.from('events').select('layout_metadata').eq('id', eventId).single();
+        if (eventData?.layout_metadata) setLayout(eventData.layout_metadata);
 
-      if (eventRes.data?.layout_metadata) setLayout(eventRes.data.layout_metadata);
-      if (seatsRes.data) setSeats(seatsRes.data);
+        // Fetch seats with pagination to bypass the 1000 row limit
+        let allSeats: Seat[] = [];
+        let hasMore = true;
+        let from = 0;
+        const step = 1000;
+        
+        while (hasMore) {
+          const { data, error } = await supabase
+            .from('seats')
+            .select('*')
+            .eq('event_id', eventId)
+            .range(from, from + step - 1);
+            
+          if (error) break;
+          if (data) {
+            allSeats = [...allSeats, ...data];
+            if (data.length < step) {
+              hasMore = false;
+            } else {
+              from += step;
+            }
+          } else {
+            hasMore = false;
+          }
+        }
+        
+        setSeats(allSeats);
+      } catch (e) {
+        console.error("Error fetching seating:", e);
+      }
       
       setLoading(false);
     };

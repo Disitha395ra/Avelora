@@ -49,8 +49,7 @@ export default function BookingPage() {
     ? selectedSeats.reduce((s: number, seat: any) => s + seat.price, 0)
     : selectedTickets.reduce((s: number, t: any) => s + t.price * t.quantity, 0);
 
-  const fees = Math.round(subtotal * 0.03 * 100) / 100;
-  const total = subtotal + fees;
+  const total = subtotal;
 
   // Attendee form state
   const [attendees, setAttendees] = useState<any[]>([]);
@@ -150,12 +149,12 @@ export default function BookingPage() {
       <div className="pt-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
           {/* Back */}
-          <Link
-            to={`/event/${event.slug}`}
+          <button
+            onClick={() => navigate(`/event/${event?.slug}`)}
             className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-700 mb-6"
           >
             <ArrowLeft className="w-4 h-4" /> Back to event
-          </Link>
+          </button>
 
           {/* Step indicator */}
           <div className="flex items-center gap-2 mb-8">
@@ -403,10 +402,6 @@ export default function BookingPage() {
                   <div className="flex justify-between text-sm text-neutral-500">
                     <span>Subtotal</span>
                     <span>{formatCurrency(subtotal, event.currency)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm text-neutral-500">
-                    <span>Platform fee (3%)</span>
-                    <span>{formatCurrency(fees, event.currency)}</span>
                   </div>
                   <div className="flex justify-between text-base font-bold text-neutral-900 pt-2 border-t border-neutral-200">
                     <span>Total</span>

@@ -58,6 +58,7 @@ export function Step5Seating({ data, updateData, onValid }: Props) {
   // Visual Builder State
   const [activeTool, setActiveTool] = useState<string | 'stage' | 'empty'>('stage');
   const [isPainting, setIsPainting] = useState(false);
+  const [stageSize, setStageSize] = useState({ w: 6, h: 2 });
 
   const layout = data.seating_layout || {
     gridWidth: 20,
@@ -107,9 +108,9 @@ export function Step5Seating({ data, updateData, onValid }: Props) {
       let newLayout = { ...layout };
 
       if (activeTool === 'stage') {
-        newLayout.stage = { x, y, w: 6, h: 2 };
+        newLayout.stage = { x, y, w: stageSize.w, h: stageSize.h };
         newLayout.cells = newLayout.cells.filter(
-          (c) => !(c.x >= x && c.x < x + 6 && c.y >= y && c.y < y + 2),
+          (c) => !(c.x >= x && c.x < x + stageSize.w && c.y >= y && c.y < y + stageSize.h),
         );
       } else if (activeTool === 'empty') {
         newLayout.cells = newLayout.cells.filter((c) => !(c.x === x && c.y === y));
@@ -215,14 +216,37 @@ export function Step5Seating({ data, updateData, onValid }: Props) {
                   Create sections, pick a tool, and paint seats onto the grid.
                 </p>
               </div>
-              {/* Total seat counter */}
-              {totalSeats > 0 && (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-brand-50 border border-brand-200 rounded-lg">
-                  <Users className="w-3.5 h-3.5 text-brand-600" />
-                  <span className="text-sm font-bold text-brand-700">{totalSeats}</span>
-                  <span className="text-xs text-brand-600">total seats</span>
+              {/* Total seat counter & Grid controls */}
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-neutral-500">Grid:</span>
+                    <input 
+                      type="number" 
+                      min={10} max={200}
+                      value={layout.gridWidth}
+                      onChange={(e) => updateData({ seating_layout: { ...layout, gridWidth: Math.max(10, parseInt(e.target.value) || 20) } })}
+                      className="w-12 h-7 text-xs border border-neutral-200 rounded px-1 text-center"
+                    />
+                    <span className="text-xs text-neutral-400">×</span>
+                    <input 
+                      type="number" 
+                      min={10} max={200}
+                      value={layout.gridHeight}
+                      onChange={(e) => updateData({ seating_layout: { ...layout, gridHeight: Math.max(10, parseInt(e.target.value) || 20) } })}
+                      className="w-12 h-7 text-xs border border-neutral-200 rounded px-1 text-center"
+                    />
+                  </div>
                 </div>
-              )}
+
+                {totalSeats > 0 && (
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-brand-50 border border-brand-200 rounded-lg">
+                    <Users className="w-3.5 h-3.5 text-brand-600" />
+                    <span className="text-sm font-bold text-brand-700">{totalSeats}</span>
+                    <span className="text-xs text-brand-600">total seats</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -234,7 +258,7 @@ export function Step5Seating({ data, updateData, onValid }: Props) {
                 <h4 className="text-xs font-semibold text-neutral-900 uppercase tracking-wider mb-3">
                   Tools
                 </h4>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2 mb-2">
                   <button
                     onClick={() => setActiveTool('stage')}
                     className={cn(
@@ -258,6 +282,24 @@ export function Step5Seating({ data, updateData, onValid }: Props) {
                     <Trash2 className="w-4 h-4" /> Eraser
                   </button>
                 </div>
+                {activeTool === 'stage' && (
+                  <div className="p-3 bg-neutral-50 border border-neutral-200 rounded-lg flex items-center justify-between gap-2">
+                    <span className="text-xs text-neutral-600">Stage Size:</span>
+                    <div className="flex items-center gap-1">
+                      <input 
+                        type="number" min={1} max={50} value={stageSize.w} 
+                        onChange={(e) => setStageSize(s => ({ ...s, w: Math.max(1, parseInt(e.target.value) || 1) }))} 
+                        className="w-10 h-6 text-xs border border-neutral-200 rounded px-1 text-center" title="Width"
+                      />
+                      <span className="text-xs text-neutral-400">×</span>
+                      <input 
+                        type="number" min={1} max={50} value={stageSize.h} 
+                        onChange={(e) => setStageSize(s => ({ ...s, h: Math.max(1, parseInt(e.target.value) || 1) }))} 
+                        className="w-10 h-6 text-xs border border-neutral-200 rounded px-1 text-center" title="Height"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Sections */}
