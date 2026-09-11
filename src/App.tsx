@@ -20,10 +20,14 @@ import CreateEventPage from '@/pages/organizer/CreateEventPage';
 import MyEventsPage from '@/pages/organizer/MyEventsPage';
 import OrganizerBookingsPage from '@/pages/organizer/OrganizerBookingsPage';
 import OrganizerReportsPage from '@/pages/organizer/OrganizerReportsPage';
+import OrganizerEventDetailPage from '@/pages/organizer/OrganizerEventDetailPage';
 
 // Admin pages
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
+import AdminUsersPage from '@/pages/admin/AdminUsersPage';
+import AdminEventsPage from '@/pages/admin/AdminEventsPage';
+import AdminPaymentsPage from '@/pages/admin/AdminPaymentsPage';
 
 // Customer pages
 import MyBookingsPage from '@/pages/customer/MyBookingsPage';
@@ -80,6 +84,7 @@ function AppRoutes() {
         <Route path="dashboard" element={<OrganizerDashboard />} />
         <Route path="events" element={<MyEventsPage />} />
         <Route path="events/create" element={<CreateEventPage />} />
+        <Route path="events/:id" element={<OrganizerEventDetailPage />} />
         <Route path="bookings" element={<OrganizerBookingsPage />} />
         <Route path="reports" element={<OrganizerReportsPage />} />
         <Route path="attendees" element={<ComingSoon title="Attendees" />} />
@@ -100,6 +105,10 @@ function AppRoutes() {
       >
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="users" element={<AdminUsersPage />} />
+        <Route path="events" element={<AdminEventsPage />} />
+        <Route path="payments" element={<AdminPaymentsPage />} />
+        <Route path="settings" element={<ComingSoon title="Platform Settings" />} />
       </Route>
 
       {/* Customer */}

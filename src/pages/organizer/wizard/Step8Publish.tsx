@@ -245,7 +245,7 @@ export function Step8Publish({ data }: Props) {
         size="lg"
         onClick={handlePublish}
         loading={publishing}
-        disabled={!data.title || !data.event_type || !data.start_date || !data.contact_email}
+        disabled={!data.title || !data.event_type || !data.start_date || !data.end_date || !data.start_time || !data.end_time || !data.timezone || !data.contact_email}
         icon={<Rocket className="w-4 h-4" />}
         iconPosition="right"
       >

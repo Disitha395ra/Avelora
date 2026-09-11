@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Plus, Trash2, DollarSign } from 'lucide-react';
+import { Plus, Trash2, DollarSign, Info, Lock } from 'lucide-react';
 import { Input, Select } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { CURRENCIES } from '@/utils';
@@ -12,9 +12,49 @@ interface Props {
 }
 
 export function Step5Tickets({ data, updateData, onValid }: Props) {
+  const isReserved = data.seating_type === 'reserved';
+  const hasSections = isReserved && (data.seating_layout?.sections?.length ?? 0) > 0;
+
+  // AUTO-INHERIT: When reserved seating with sections, auto-populate ticket types from sections.
+  // This runs once when we enter Step 5 (or whenever sections change).
   useEffect(() => {
-    const valid = data.ticket_types.length > 0 &&
-      data.ticket_types.every(t => t.name && t.quantity > 0 && t.price >= 0);
+    if (!hasSections) return;
+
+    const layout = data.seating_layout;
+    const sections = layout.sections;
+
+    // Build inherited ticket types from sections
+    const inheritedTickets = sections.map((section) => {
+      const seatCount = layout.cells.filter((c) => c.sectionId === section.id).length;
+      // Try to preserve any user-edited description/sale dates for this section
+      const existing = data.ticket_types.find((t) => t.name === section.name);
+      return {
+        name: section.name,           // locked — from section
+        quantity: seatCount,          // locked — from painted seats
+        price: section.price,         // editable
+        description: existing?.description ?? '',
+        sale_start: existing?.sale_start ?? '',
+        sale_end: existing?.sale_end ?? '',
+        _sectionId: section.id,       // internal reference (not sent to DB)
+      };
+    });
+
+    // Only update if tickets have meaningfully changed (avoid infinite loop)
+    const currentJson = JSON.stringify(
+      data.ticket_types.map((t) => ({ name: t.name, quantity: t.quantity })),
+    );
+    const newJson = JSON.stringify(
+      inheritedTickets.map((t) => ({ name: t.name, quantity: t.quantity })),
+    );
+    if (currentJson !== newJson) {
+      updateData({ ticket_types: inheritedTickets as WizardData['ticket_types'] });
+    }
+  }, [hasSections, data.seating_layout]);
+
+  useEffect(() => {
+    const valid =
+      data.ticket_types.length > 0 &&
+      data.ticket_types.every((t) => t.name && t.quantity > 0 && t.price >= 0);
     onValid(valid);
   }, [data.ticket_types]);
 
@@ -34,7 +74,7 @@ export function Step5Tickets({ data, updateData, onValid }: Props) {
 
   const updateTicket = (i: number, field: string, value: string | number) => {
     const updated = data.ticket_types.map((t, idx) =>
-      idx === i ? { ...t, [field]: value } : t
+      idx === i ? { ...t, [field]: value } : t,
     );
     updateData({ ticket_types: updated });
   };
@@ -48,11 +88,28 @@ export function Step5Tickets({ data, updateData, onValid }: Props) {
         </p>
       </div>
 
+      {/* Auto-inherit banner for reserved seating */}
+      {hasSections && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3">
+          <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-blue-800">
+              Ticket types auto-generated from your seating sections
+            </p>
+            <p className="text-xs text-blue-600 mt-0.5">
+              Each section becomes a ticket type. <strong>Name</strong> and{' '}
+              <strong>quantity</strong> are locked to your seat layout. You can edit prices,
+              descriptions, and sale windows below.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Currency */}
       <div className="mb-6">
         <Select
           label="Event Currency"
-          options={CURRENCIES.map(c => ({ value: c.code, label: `${c.code} — ${c.label}` }))}
+          options={CURRENCIES.map((c) => ({ value: c.code, label: `${c.code} — ${c.label}` }))}
           value={data.currency}
           onChange={(e) => updateData({ currency: e.target.value })}
         />
@@ -63,8 +120,18 @@ export function Step5Tickets({ data, updateData, onValid }: Props) {
         {data.ticket_types.map((ticket, i) => (
           <div key={i} className="p-5 border border-neutral-200 rounded-xl bg-neutral-50">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-semibold text-neutral-700">Ticket Type {i + 1}</span>
-              {data.ticket_types.length > 1 && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-neutral-700">
+                  Ticket Type {i + 1}
+                </span>
+                {hasSections && (
+                  <span className="flex items-center gap-1 text-xs text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded-full">
+                    <Lock className="w-2.5 h-2.5" /> inherited
+                  </span>
+                )}
+              </div>
+              {/* Only show delete when not inherited OR if more than minimum */}
+              {!hasSections && data.ticket_types.length > 1 && (
                 <button
                   onClick={() => removeTicket(i)}
                   className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -75,13 +142,24 @@ export function Step5Tickets({ data, updateData, onValid }: Props) {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
-                label="Ticket Name"
-                placeholder="e.g. General, VIP, Student"
-                value={ticket.name}
-                onChange={(e) => updateTicket(i, 'name', e.target.value)}
-                required
-              />
+              {/* Ticket Name — locked if inherited */}
+              <div className="relative">
+                <Input
+                  label="Ticket Name"
+                  placeholder="e.g. General, VIP, Student"
+                  value={ticket.name}
+                  onChange={(e) => !hasSections && updateTicket(i, 'name', e.target.value)}
+                  required
+                  disabled={hasSections}
+                  className={hasSections ? 'bg-neutral-100 cursor-not-allowed text-neutral-500' : ''}
+                />
+                {hasSections && (
+                  <p className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
+                    <Lock className="w-2.5 h-2.5" /> From section name
+                  </p>
+                )}
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <Input
                   label="Price"
@@ -94,15 +172,28 @@ export function Step5Tickets({ data, updateData, onValid }: Props) {
                   icon={<DollarSign className="w-3.5 h-3.5" />}
                   hint={ticket.price === 0 ? 'Free ticket' : `${data.currency} ${ticket.price}`}
                 />
-                <Input
-                  label="Quantity"
-                  type="number"
-                  min="1"
-                  placeholder="100"
-                  value={ticket.quantity}
-                  onChange={(e) => updateTicket(i, 'quantity', parseInt(e.target.value) || 0)}
-                  required
-                />
+
+                {/* Quantity — locked if inherited */}
+                <div className="relative">
+                  <Input
+                    label="Quantity"
+                    type="number"
+                    min="1"
+                    placeholder="100"
+                    value={ticket.quantity}
+                    onChange={(e) =>
+                      !hasSections && updateTicket(i, 'quantity', parseInt(e.target.value) || 0)
+                    }
+                    required
+                    disabled={hasSections}
+                    className={hasSections ? 'bg-neutral-100 cursor-not-allowed text-neutral-500' : ''}
+                  />
+                  {hasSections && (
+                    <p className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
+                      <Lock className="w-2.5 h-2.5" /> From seat count
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -135,13 +226,16 @@ export function Step5Tickets({ data, updateData, onValid }: Props) {
         ))}
       </div>
 
-      <Button
-        variant="outline"
-        onClick={addTicket}
-        icon={<Plus className="w-4 h-4" />}
-      >
-        Add Another Ticket Type
-      </Button>
+      {/* Add ticket button — only shown for non-reserved seating */}
+      {!hasSections && (
+        <Button
+          variant="outline"
+          onClick={addTicket}
+          icon={<Plus className="w-4 h-4" />}
+        >
+          Add Another Ticket Type
+        </Button>
+      )}
 
       {/* Summary */}
       {data.ticket_types.length > 0 && (
@@ -152,15 +246,21 @@ export function Step5Tickets({ data, updateData, onValid }: Props) {
               <div key={i} className="flex justify-between text-xs text-brand-700">
                 <span>{t.name || `Ticket ${i + 1}`}</span>
                 <span>
-                  {t.price === 0 ? 'Free' : `${data.currency} ${t.price}`} × {t.quantity} = {' '}
-                  <strong>{t.price === 0 ? 'Free' : `${data.currency} ${(t.price * t.quantity).toLocaleString()}`}</strong>
+                  {t.price === 0 ? 'Free' : `${data.currency} ${t.price}`} × {t.quantity} ={' '}
+                  <strong>
+                    {t.price === 0
+                      ? 'Free'
+                      : `${data.currency} ${(t.price * t.quantity).toLocaleString()}`}
+                  </strong>
                 </span>
               </div>
             ))}
           </div>
           <div className="mt-2 pt-2 border-t border-brand-200 flex justify-between text-xs font-bold text-brand-900">
             <span>Total capacity</span>
-            <span>{data.ticket_types.reduce((s, t) => s + t.quantity, 0)} tickets</span>
+            <span>
+              {data.ticket_types.reduce((s, t) => s + t.quantity, 0)} seats / tickets
+            </span>
           </div>
         </div>
       )}

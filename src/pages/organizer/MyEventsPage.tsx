@@ -103,10 +103,10 @@ export default function MyEventsPage() {
                   <td className="px-4 py-3 text-sm font-semibold text-neutral-900">${revenue.toLocaleString()}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
-                      <Link to={`/event/${event.slug}`} target="_blank" title="View Event" className="p-1.5 text-neutral-400 hover:text-brand-600 rounded-md hover:bg-brand-50"><Eye className="w-4 h-4" /></Link>
-                      <button onClick={() => toast('Edit feature coming soon!', { icon: '🚧' })} title="Edit Event" className="p-1.5 text-neutral-400 hover:text-brand-600 rounded-md hover:bg-brand-50"><Edit className="w-4 h-4" /></button>
-                      <button 
-                        title="Share Event"
+                      <Link to={`/organizer/events/${event.id}`} title="Manage Event" className="p-1.5 text-neutral-400 hover:text-brand-600 rounded-md hover:bg-brand-50"><Edit className="w-4 h-4" /></Link>
+                      <Link to={`/event/${event.slug}`} target="_blank" title="View Public Page" className="p-1.5 text-neutral-400 hover:text-brand-600 rounded-md hover:bg-brand-50"><Eye className="w-4 h-4" /></Link>
+                      <button
+                        title="Copy Share Link"
                         onClick={() => {
                           navigator.clipboard.writeText(`${SITE_URL}/event/${event.slug}`);
                           toast.success('Event link copied!');

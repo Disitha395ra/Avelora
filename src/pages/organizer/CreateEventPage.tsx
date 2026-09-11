@@ -127,7 +127,7 @@ const defaultData: WizardData = {
 export default function CreateEventPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [data, setData] = useState<WizardData>(defaultData);
-  const [, setStepValid] = useState<Record<number, boolean>>({});
+  const [stepValid, setStepValid] = useState<Record<number, boolean>>({});
   const navigate = useNavigate();
 
   const updateData = (updates: Partial<WizardData>) => {
@@ -253,6 +253,7 @@ export default function CreateEventPage() {
         {currentStep < 7 ? (
           <Button
             onClick={goNext}
+            disabled={!stepValid[currentStep]}
             icon={<ChevronRight className="w-4 h-4" />}
             iconPosition="right"
           >
