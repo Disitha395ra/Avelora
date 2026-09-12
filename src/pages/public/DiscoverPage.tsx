@@ -62,54 +62,11 @@ export default function DiscoverPage() {
       <Navbar />
 
       <div className="pt-16">
-        {/* Header */}
-        <div className="bg-neutral-50 border-b border-neutral-200 py-10 px-4 sm:px-6">
-          <div className="max-w-7xl mx-auto">
-            <h1 className="text-3xl font-bold text-neutral-900 mb-1">Discover Events</h1>
-            <p className="text-neutral-500 mb-6">Find your next experience — anywhere in the world.</p>
-
-            {/* Search bar */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1">
-                <Input
-                  placeholder="Search events, organizers, cities..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  icon={<Search className="w-4 h-4" />}
-                />
-              </div>
-              <Button
-                variant="outline"
-                icon={<SlidersHorizontal className="w-4 h-4" />}
-                onClick={() => setShowFilters(!showFilters)}
-              >
-                Filters
-                {(freeOnly) && (
-                  <span className="ml-1 w-4 h-4 bg-brand-500 text-white text-[10px] rounded-full flex items-center justify-center">1</span>
-                )}
-              </Button>
-            </div>
-
-            {/* Filter panel */}
-            {showFilters && (
-              <div className="mt-4 p-4 bg-white border border-neutral-200 rounded-xl flex flex-wrap items-center gap-4">
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={freeOnly}
-                    onChange={(e) => setFreeOnly(e.target.checked)}
-                    className="w-4 h-4 accent-brand-500"
-                  />
-                  <span className="text-neutral-700 font-medium">Free events only</span>
-                </label>
-                <button
-                  onClick={() => { setFreeOnly(false); setShowFilters(false); }}
-                  className="ml-auto text-xs text-neutral-500 hover:text-neutral-700 flex items-center gap-1"
-                >
-                  <X className="w-3 h-3" /> Clear filters
-                </button>
-              </div>
-            )}
+        {/* Editorial search header */}
+        <div className="bg-neutral-900 text-white px-5 sm:px-8 py-14 lg:py-20">
+          <div className="max-w-[1380px] mx-auto grid lg:grid-cols-[.8fr_1.2fr] gap-10 items-end">
+            <div><p className="font-mono text-[10px] tracking-[.2em] uppercase text-accent-400 mb-5">The Avelora journal / discover</p><h1 className="font-serif text-5xl sm:text-6xl leading-[.9] text-white">Find your<br /><em className="text-accent-400">next story.</em></h1></div>
+            <div><p className="text-neutral-400 max-w-lg mb-6">A living collection of talks, concerts, workshops and gatherings selected for curious people.</p><div className="flex gap-3"><div className="flex-1"><Input placeholder="Search by name, city or organiser" value={search} onChange={(e) => setSearch(e.target.value)} icon={<Search className="w-4 h-4" />} /></div><Button variant="outline" icon={<SlidersHorizontal className="w-4 h-4" />} onClick={() => setShowFilters(!showFilters)}>Filter</Button></div>{showFilters && <div className="mt-4 p-4 bg-white text-neutral-900 border border-neutral-200 flex items-center gap-4"><label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={freeOnly} onChange={(e) => setFreeOnly(e.target.checked)} className="w-4 h-4 accent-brand-500" /><span className="font-medium">Free events only</span></label><button onClick={() => { setFreeOnly(false); setShowFilters(false); }} className="ml-auto text-xs text-neutral-500 flex items-center gap-1"><X className="w-3 h-3" /> Clear</button></div>}</div>
           </div>
         </div>
 
