@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, CheckCircle2, CreditCard, Lock, User } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, CreditCard, Lock, User, Download } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/features/auth/AuthContext';
 import { Navbar } from '@/components/layout/Navbar';
@@ -18,13 +18,29 @@ export default function BookingPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const event = location.state?.event;
-  const quantities = location.state?.quantities || {};
+  // Initialize state from location OR sessionStorage (for post-OAuth redirect)
+  const [event] = useState(() => {
+    if (location.state?.event) {
+      sessionStorage.setItem('booking_event', JSON.stringify(location.state.event));
+      return location.state.event;
+    }
+    return JSON.parse(sessionStorage.getItem('booking_event') || 'null');
+  });
+
+  const [quantities] = useState(() => {
+    if (location.state?.quantities) {
+      sessionStorage.setItem('booking_quantities', JSON.stringify(location.state.quantities));
+      return location.state.quantities;
+    }
+    return JSON.parse(sessionStorage.getItem('booking_quantities') || '{}');
+  });
 
   // Extract selected tickets from event.ticket_types based on quantities
-  const selectedTickets = event?.ticket_types
-    ?.filter((t: any) => quantities[t.id] > 0)
-    ?.map((t: any) => ({ ...t, quantity: quantities[t.id] })) || [];
+  const selectedTickets = useMemo(() => {
+    return event?.ticket_types
+      ?.filter((t: any) => quantities[t.id] > 0)
+      ?.map((t: any) => ({ ...t, quantity: quantities[t.id] })) || [];
+  }, [event, quantities]);
 
   useEffect(() => {
     if (!event || (selectedTickets.length === 0 && event?.seating_type !== 'reserved')) {
@@ -36,8 +52,20 @@ export default function BookingPage() {
     ? ['Select Seats', 'Details', 'Payment', 'Confirmation']
     : ['Details', 'Payment', 'Confirmation'];
 
-  const [step, setStep] = useState(0);
-  const [selectedSeats, setSelectedSeats] = useState<any[]>([]);
+  const [step, setStep] = useState(() => parseInt(sessionStorage.getItem('booking_step') || '0'));
+  const [selectedSeats, setSelectedSeats] = useState<any[]>(() => JSON.parse(sessionStorage.getItem('booking_seats') || '[]'));
+  const [attendees, setAttendees] = useState<any[]>(() => JSON.parse(sessionStorage.getItem('booking_attendees') || '[]'));
+
+  // Keep sessionStorage in sync
+  useEffect(() => {
+    sessionStorage.setItem('booking_step', step.toString());
+  }, [step]);
+  useEffect(() => {
+    sessionStorage.setItem('booking_seats', JSON.stringify(selectedSeats));
+  }, [selectedSeats]);
+  useEffect(() => {
+    sessionStorage.setItem('booking_attendees', JSON.stringify(attendees));
+  }, [attendees]);
 
   const [processing, setProcessing] = useState(false);
   const [bookingRef, setBookingRef] = useState('');
@@ -51,37 +79,56 @@ export default function BookingPage() {
 
   const total = subtotal;
 
-  // Attendee form state
-  const [attendees, setAttendees] = useState<any[]>([]);
-
+  // Auto-initialize attendees when seats change, ONLY if empty or user is at step 0
   useEffect(() => {
-    if (isReserved) {
-      setAttendees(
-        selectedSeats.map((s: any) => ({
-          first_name: '', last_name: '', email: '', phone: '', seat_id: s.id, ticket_type_id: event?.ticket_types[0]?.id 
-        }))
-      );
-    } else {
-      setAttendees(
-        selectedTickets.flatMap((t: any) =>
-          Array.from({ length: t.quantity }, () => ({ 
-            first_name: '', last_name: '', email: '', phone: '', ticket_type_id: t.id 
-          }))
-        )
-      );
+    if (step === 0) {
+      if (isReserved) {
+        setAttendees(selectedSeats.map((s: any) => ({ first_name: '', last_name: '', email: '', phone: '', seat_id: s.id, ticket_type_id: event?.ticket_types?.[0]?.id })));
+      } else {
+        setAttendees(
+          selectedTickets.flatMap((t: any) =>
+            Array.from({ length: t.quantity }, () => ({ 
+              first_name: '', last_name: '', email: '', phone: '', ticket_type_id: t.id 
+            }))
+          )
+        );
+      }
     }
-  }, [selectedSeats, selectedTickets, isReserved, event]);
+  }, [selectedSeats, selectedTickets, isReserved, step]);
 
   const updateAttendee = (i: number, field: string, value: string) => {
     setAttendees((prev: any[]) => prev.map((a: any, idx: number) => idx === i ? { ...a, [field]: value } : a));
   };
+
+  const handleGoogleLogin = async () => {
+    try {
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.href,
+        },
+      });
+    } catch (error: any) {
+      toast.error('Failed to start login');
+    }
+  };
+
+  // Auto-print receipt on confirmation step
+  useEffect(() => {
+    const isConfirmationStep = (isReserved && step === 3) || (!isReserved && step === 2);
+    if (isConfirmationStep) {
+      const timer = setTimeout(() => {
+        window.print();
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [step, isReserved]);
 
   const [cardData, setCardData] = useState({ number: '', expiry: '', cvc: '', name: '' });
 
   const handlePayment = async () => {
     if (!user) {
       toast.error('You must be logged in to book tickets.');
-      navigate('/login');
       return;
     }
     
@@ -175,7 +222,22 @@ export default function BookingPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left: Form */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2" id="booking-main">
+              <style>{`
+                @media print {
+                  body * { visibility: hidden; }
+                  #receipt-area, #receipt-area * { visibility: visible; }
+                  #receipt-area {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    width: 100%;
+                    padding: 40px;
+                    text-align: left;
+                  }
+                  .no-print { display: none !important; }
+                }
+              `}</style>
               {/* Step: Select Seats (if reserved) */}
               {isReserved && step === 0 && (
                 <div className="bg-white border border-neutral-200 rounded-xl p-6">
@@ -258,16 +320,28 @@ export default function BookingPage() {
                           Back
                         </Button>
                       )}
-                      <Button
-                        fullWidth
-                        size="lg"
-                        onClick={() => setStep(isReserved ? 2 : 1)}
-                        disabled={attendees.some((a: any) => !a.first_name || !a.last_name || !a.email)}
-                        icon={<ArrowRight className="w-4 h-4" />}
-                        iconPosition="right"
-                      >
-                        Continue to Payment
-                      </Button>
+                      {user ? (
+                        <Button
+                          fullWidth
+                          size="lg"
+                          onClick={() => setStep(isReserved ? 2 : 1)}
+                          disabled={attendees.some((a: any) => !a.first_name || !a.last_name || !a.email)}
+                          icon={<ArrowRight className="w-4 h-4" />}
+                          iconPosition="right"
+                        >
+                          Continue to Payment
+                        </Button>
+                      ) : (
+                        <Button
+                          fullWidth
+                          size="lg"
+                          onClick={handleGoogleLogin}
+                          disabled={attendees.some((a: any) => !a.first_name || !a.last_name || !a.email)}
+                          variant="primary"
+                        >
+                          Sign in with Google to Continue
+                        </Button>
+                      )}
                     </div>
                 </div>
               )}
@@ -337,7 +411,7 @@ export default function BookingPage() {
 
               {/* Step: Confirmation */}
               {((isReserved && step === 3) || (!isReserved && step === 2)) && (
-                <div className="bg-white border border-neutral-200 rounded-xl p-8 text-center">
+                <div id="receipt-area" className="bg-white border border-neutral-200 rounded-xl p-8 text-center">
                   <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                     <CheckCircle2 className="w-8 h-8 text-green-600" />
                   </div>
@@ -365,8 +439,10 @@ export default function BookingPage() {
                     ))}
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                    <Button variant="outline">Download Invoice</Button>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center no-print">
+                    <Button variant="outline" onClick={() => window.print()} icon={<Download className="w-4 h-4" />}>
+                      Download Receipt
+                    </Button>
                     <Link to="/my/tickets">
                       <Button>View My Tickets</Button>
                     </Link>
