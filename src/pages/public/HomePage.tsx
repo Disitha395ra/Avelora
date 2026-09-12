@@ -95,68 +95,20 @@ export default function HomePage() {
       <Navbar />
 
       {/* ─────────────────────────────────────────────────────── HERO */}
-      <section className="relative pt-[68px] min-h-[85vh] flex items-center overflow-hidden bg-neutral-900">
-        {/* Background image with editorial overlay */}
-        <div className="absolute inset-0">
-          <img
-            src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1800&auto=format&fit=crop&q=80"
-            alt="Events"
-            className="w-full h-full object-cover opacity-30"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-neutral-900 via-neutral-900/90 to-neutral-900/40" />
-        </div>
-
-        <div className="relative max-w-7xl mx-auto px-5 sm:px-8 py-24 lg:py-32">
-          <div className="max-w-2xl">
-            {/* Label */}
-            <div className="inline-flex items-center gap-2 mb-6">
-              <span className="w-8 h-[2px] bg-brand-400" />
-              <span className="text-brand-400 text-xs font-semibold uppercase tracking-[0.15em]">
-                Global Event Platform
-              </span>
-            </div>
-
-            {/* Headline */}
-            <h1 className="font-serif text-5xl sm:text-6xl lg:text-7xl font-bold text-white leading-[1.1] mb-6">
-              Where Great
-              <br />
-              <em className="not-italic text-brand-400">Experiences</em>
-              <br />
-              Come Together
-            </h1>
-
-            <p className="text-lg text-neutral-300 leading-relaxed mb-10 max-w-xl">
-              Create, manage, and experience events of any scale — from intimate seminars to 
-              stadium concerts. Avelora powers events across the globe.
-            </p>
-
-            <div className="flex flex-col sm:flex-row items-start gap-4">
-              <Link to="/organizer/events/create">
-                <button className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold px-7 py-3.5 rounded-lg transition-colors shadow-lg text-sm">
-                  Create Your Event <ArrowRight className="w-4 h-4" />
-                </button>
-              </Link>
-              <Link to="/discover">
-                <button className="flex items-center gap-2 border border-white/30 text-white hover:bg-white/10 font-medium px-7 py-3.5 rounded-lg transition-colors text-sm">
-                  Explore Events <ChevronRight className="w-4 h-4" />
-                </button>
-              </Link>
-            </div>
-
-            <p className="mt-5 text-xs text-neutral-500">
-              No setup fees · Free to create · Pay only when you sell
-            </p>
+      <section className="pt-[76px] bg-neutral-50 border-b border-neutral-200 overflow-hidden">
+        <div className="max-w-[1380px] mx-auto px-5 sm:px-8 py-12 lg:py-20 grid lg:grid-cols-[.9fr_1.1fr] gap-12 lg:gap-20 items-center">
+          <div className="max-w-xl">
+            <div className="flex items-center gap-3 mb-8"><span className="font-mono text-[10px] tracking-[.2em] uppercase text-accent-500">Avelora / 01</span><span className="h-px w-12 bg-accent-400" /></div>
+            <h1 className="font-serif text-[clamp(3.8rem,7vw,7.5rem)] leading-[.86] tracking-[-.06em] text-neutral-900 mb-8">Make room<br /><em className="text-accent-500">for wonder.</em></h1>
+            <p className="max-w-md text-base sm:text-lg text-neutral-600 leading-relaxed mb-9">A considered place for gatherings worth remembering — discover them, or give your own a stage.</p>
+            <div className="flex flex-wrap items-center gap-3"><Link to="/discover"><button className="bg-neutral-900 text-white px-6 py-3.5 text-sm font-semibold hover:bg-accent-500 transition-colors">Find your next thing <ArrowRight className="inline w-4 h-4 ml-2" /></button></Link><Link to="/organizer/events/create" className="text-sm font-semibold text-neutral-700 border-b border-neutral-400 pb-1 hover:text-accent-500 hover:border-accent-500 transition-colors">Host an event</Link></div>
+            <div className="mt-14 pt-5 border-t border-neutral-200 flex gap-8">{stats.slice(0, 3).map((s) => <div key={s.label}><p className="font-serif text-2xl text-neutral-900">{s.value}</p><p className="font-mono text-[9px] uppercase tracking-wider text-neutral-500 mt-1">{s.label}</p></div>)}</div>
           </div>
-        </div>
-
-        {/* Floating stat card */}
-        <div className="hidden lg:flex absolute right-12 top-1/2 -translate-y-1/2 flex-col gap-3">
-          {stats.map((s) => (
-            <div key={s.label} className="bg-white/10 backdrop-blur-sm border border-white/15 rounded-xl p-4 text-center w-36">
-              <p className="font-serif text-2xl font-bold text-white">{s.value}</p>
-              <p className="text-[11px] text-neutral-300 mt-0.5">{s.label}</p>
-            </div>
-          ))}
+          <div className="relative min-h-[420px] lg:min-h-[560px]">
+            <div className="absolute top-0 right-0 w-[72%] h-[78%] overflow-hidden"><img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200&auto=format&fit=crop&q=85" alt="Audience at a live event" className="w-full h-full object-cover" /></div>
+            <div className="absolute bottom-0 left-0 w-[54%] h-[48%] border-[10px] border-neutral-50 overflow-hidden"><img src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&auto=format&fit=crop&q=85" alt="People enjoying live music" className="w-full h-full object-cover" /></div>
+            <div className="absolute right-[8%] bottom-[13%] bg-accent-500 text-white p-5 w-36"><p className="font-mono text-[9px] uppercase tracking-wider text-white/70 mb-5">The good life</p><p className="font-serif text-2xl leading-none">Gather<br />often.</p></div>
+          </div>
         </div>
       </section>
 
