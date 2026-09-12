@@ -252,17 +252,23 @@ export default function BookingPage() {
                     ))}
                   </div>
 
-                  <Button
-                    fullWidth
-                    size="lg"
-                    className="mt-6"
-                    onClick={() => setStep(isReserved ? 2 : 1)}
-                    disabled={attendees.some((a: any) => !a.first_name || !a.last_name || !a.email)}
-                    icon={<ArrowRight className="w-4 h-4" />}
-                    iconPosition="right"
-                  >
-                    Continue to Payment
-                  </Button>
+                    <div className="mt-6 flex gap-3">
+                      {isReserved && (
+                        <Button variant="outline" onClick={() => setStep(0)} icon={<ArrowLeft className="w-4 h-4" />}>
+                          Back
+                        </Button>
+                      )}
+                      <Button
+                        fullWidth
+                        size="lg"
+                        onClick={() => setStep(isReserved ? 2 : 1)}
+                        disabled={attendees.some((a: any) => !a.first_name || !a.last_name || !a.email)}
+                        icon={<ArrowRight className="w-4 h-4" />}
+                        iconPosition="right"
+                      >
+                        Continue to Payment
+                      </Button>
+                    </div>
                 </div>
               )}
 

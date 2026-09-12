@@ -167,8 +167,8 @@ export function Step6Tickets({ data, updateData, onValid }: Props) {
                   min="0"
                   step="0.01"
                   placeholder="0.00"
-                  value={ticket.price}
-                  onChange={(e) => updateTicket(i, 'price', parseFloat(e.target.value) || 0)}
+                  value={ticket.price === 0 ? '' : ticket.price}
+                  onChange={(e) => updateTicket(i, 'price', e.target.value === '' ? 0 : parseFloat(e.target.value))}
                   icon={<DollarSign className="w-3.5 h-3.5" />}
                   hint={ticket.price === 0 ? 'Free ticket' : `${data.currency} ${ticket.price}`}
                 />
@@ -180,9 +180,9 @@ export function Step6Tickets({ data, updateData, onValid }: Props) {
                     type="number"
                     min="1"
                     placeholder="100"
-                    value={ticket.quantity}
+                    value={ticket.quantity === 0 ? '' : ticket.quantity}
                     onChange={(e) =>
-                      !hasSections && updateTicket(i, 'quantity', parseInt(e.target.value) || 0)
+                      updateTicket(i, 'quantity', e.target.value === '' ? 0 : parseInt(e.target.value))
                     }
                     required
                     disabled={hasSections}

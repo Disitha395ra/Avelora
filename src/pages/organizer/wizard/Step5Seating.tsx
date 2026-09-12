@@ -248,7 +248,7 @@ export function Step5Seating({ data, updateData, onValid }: Props) {
                       type="number" 
                       min={10} max={200}
                       value={layout.gridWidth}
-                      onChange={(e) => updateData({ seating_layout: { ...layout, gridWidth: Math.max(10, parseInt(e.target.value) || 20) } })}
+                      onChange={(e) => updateData({ seating_layout: { ...layout, gridWidth: e.target.value === '' ? ('' as any) : parseInt(e.target.value) } })}
                       className="w-12 h-7 text-xs border border-neutral-200 rounded px-1 text-center"
                     />
                     <span className="text-xs text-neutral-400">×</span>
@@ -256,7 +256,7 @@ export function Step5Seating({ data, updateData, onValid }: Props) {
                       type="number" 
                       min={10} max={200}
                       value={layout.gridHeight}
-                      onChange={(e) => updateData({ seating_layout: { ...layout, gridHeight: Math.max(10, parseInt(e.target.value) || 20) } })}
+                      onChange={(e) => updateData({ seating_layout: { ...layout, gridHeight: e.target.value === '' ? ('' as any) : parseInt(e.target.value) } })}
                       className="w-12 h-7 text-xs border border-neutral-200 rounded px-1 text-center"
                     />
                   </div>
@@ -339,13 +339,13 @@ export function Step5Seating({ data, updateData, onValid }: Props) {
                     <div className="flex items-center gap-1">
                       <input 
                         type="number" min={1} max={50} value={stageSize.w} 
-                        onChange={(e) => setStageSize(s => ({ ...s, w: Math.max(1, parseInt(e.target.value) || 1) }))} 
+                        onChange={(e) => setStageSize(s => ({ ...s, w: e.target.value === '' ? ('' as any) : parseInt(e.target.value) }))} 
                         className="w-10 h-6 text-xs border border-neutral-200 rounded px-1 text-center" title="Width"
                       />
                       <span className="text-xs text-neutral-400">×</span>
                       <input 
                         type="number" min={1} max={50} value={stageSize.h} 
-                        onChange={(e) => setStageSize(s => ({ ...s, h: Math.max(1, parseInt(e.target.value) || 1) }))} 
+                        onChange={(e) => setStageSize(s => ({ ...s, h: e.target.value === '' ? ('' as any) : parseInt(e.target.value) }))} 
                         className="w-10 h-6 text-xs border border-neutral-200 rounded px-1 text-center" title="Height"
                       />
                     </div>
@@ -405,16 +405,16 @@ export function Step5Seating({ data, updateData, onValid }: Props) {
                         <div className="pl-5 flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-neutral-500">Price:</span>
-                            <Input
-                              type="number"
-                              value={section.price}
-                              onChange={(e) =>
-                                updateSection(section.id, {
-                                  price: parseInt(e.target.value) || 0,
-                                })
-                              }
-                              className="h-7 text-xs px-2 bg-white w-20"
-                            />
+                              <Input
+                                type="number"
+                                value={section.price === 0 ? '' : section.price}
+                                onChange={(e) =>
+                                  updateSection(section.id, {
+                                    price: e.target.value === '' ? 0 : parseInt(e.target.value),
+                                  })
+                                }
+                                className="h-7 text-xs px-2 bg-white w-20"
+                              />
                           </div>
                           {/* Live seat count badge */}
                           <div
