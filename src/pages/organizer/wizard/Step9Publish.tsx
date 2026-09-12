@@ -196,7 +196,7 @@ export function Step9Publish({ data }: Props) {
 
           let rowIndex = 1;
           for (const y of yCoords) {
-            const rowLabel = String.fromCharCode(64 + rowIndex); // A, B, C…
+            const rowLabel = String.fromCharCode(65 + (y % 26));
 
             const { data: rowData, error: rowError } = await supabase
               .from('seating_rows')
@@ -213,17 +213,21 @@ export function Step9Publish({ data }: Props) {
 
             const rowCells = sectionCells.filter((c) => c.y === y).sort((a, b) => a.x - b.x);
 
-            const seatsPayload = rowCells.map((_, s) => ({
-              event_id: event.id,
-              section_id: sectionData.id,
-              row_id: rowData.id,
-              label: `${rowLabel}${s + 1}`,
-              row_label: rowLabel,
-              seat_number: `${s + 1}`,
-              seat_type: 'regular' as const,
-              status: 'available' as const,
-              price: section.price,
-            }));
+            const seatsPayload = rowCells.map((cell) => {
+              const rowChar = String.fromCharCode(65 + (cell.y % 26));
+              const seatNumber = `${cell.x + 1}`;
+              return {
+                event_id: event.id,
+                section_id: sectionData.id,
+                row_id: rowData.id,
+                label: cell.label,
+                row_label: rowChar,
+                seat_number: seatNumber,
+                seat_type: 'regular' as const,
+                status: 'available' as const,
+                price: section.price,
+              };
+            });
 
             if (seatsPayload.length > 0) {
               const { error: seatsError } = await supabase.from('seats').insert(seatsPayload);

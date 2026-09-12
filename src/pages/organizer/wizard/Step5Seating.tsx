@@ -421,9 +421,10 @@ export function Step5Seating({ data, updateData, onValid }: Props) {
             </div>
 
             {/* Right: Grid Canvas */}
-            <div className="flex-1 bg-neutral-100 rounded-2xl p-6 border border-neutral-200 overflow-auto flex items-center justify-center">
-              <div
-                className="relative bg-white shadow-sm border border-neutral-200 select-none touch-none"
+            <div className="flex-1 bg-neutral-100 rounded-2xl p-6 border border-neutral-200 overflow-auto">
+              <div className="min-w-max min-h-max flex items-center justify-center mx-auto">
+                <div
+                  className="relative bg-white shadow-sm border border-neutral-200 select-none touch-none"
                 style={{
                   width: layout.gridWidth * 24,
                   height: layout.gridHeight * 24,
@@ -474,6 +475,7 @@ export function Step5Seating({ data, updateData, onValid }: Props) {
                   </div>
                 )}
               </div>
+            </div>
             </div>
           </div>
 
