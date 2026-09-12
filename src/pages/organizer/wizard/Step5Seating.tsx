@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Users, Layout, Table, Pencil, Plus, Trash2, Maximize } from 'lucide-react';
+import { Users, Layout, Table, Pencil, Plus, Trash2, Maximize, Printer, X } from 'lucide-react';
 import { cn } from '@/utils';
 import { Input } from '@/components/ui/Input';
 import type { WizardData } from '../CreateEventPage';
@@ -59,6 +59,7 @@ export function Step5Seating({ data, updateData, onValid }: Props) {
   const [activeTool, setActiveTool] = useState<string | 'stage' | 'empty'>('stage');
   const [isPainting, setIsPainting] = useState(false);
   const [stageSize, setStageSize] = useState({ w: 6, h: 2 });
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const layout = data.seating_layout || {
     gridWidth: 20,
@@ -160,6 +161,25 @@ export function Step5Seating({ data, updateData, onValid }: Props) {
 
   return (
     <div>
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          #printable-layout, #printable-layout * { visibility: visible; }
+          #printable-layout {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .no-print { display: none !important; }
+          #printable-layout .canvas-container {
+            border: none !important;
+            box-shadow: none !important;
+          }
+        }
+      `}</style>
       <div className="mb-6">
         <h2 className="text-xl font-bold text-neutral-900">Seating Configuration</h2>
         <p className="text-sm text-neutral-500 mt-1">Choose how your event venue is structured.</p>
@@ -207,9 +227,12 @@ export function Step5Seating({ data, updateData, onValid }: Props) {
       </div>
 
       {data.seating_type === 'reserved' ? (
-        <div className="mt-8 border-t border-neutral-200 pt-8">
-          <div className="mb-6">
-            <div className="flex items-center justify-between">
+        <div className={cn(
+          "mt-8 border-t border-neutral-200 pt-8",
+          isFullscreen && "fixed inset-0 z-50 bg-white p-6 md:p-8 m-0 border-0 overflow-auto flex flex-col"
+        )}>
+          <div className="mb-6 shrink-0">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
                 <h3 className="text-lg font-bold text-neutral-900">Visual Layout Builder</h3>
                 <p className="text-sm text-neutral-500">
@@ -217,7 +240,7 @@ export function Step5Seating({ data, updateData, onValid }: Props) {
                 </p>
               </div>
               {/* Total seat counter & Grid controls */}
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1">
                     <span className="text-xs text-neutral-500">Grid:</span>
@@ -243,18 +266,46 @@ export function Step5Seating({ data, updateData, onValid }: Props) {
                   <div className="flex items-center gap-2 px-3 py-1.5 bg-brand-50 border border-brand-200 rounded-lg">
                     <Users className="w-3.5 h-3.5 text-brand-600" />
                     <span className="text-sm font-bold text-brand-700">{totalSeats}</span>
-                    <span className="text-xs text-brand-600">total seats</span>
+                    <span className="hidden sm:inline text-xs text-brand-600">total seats</span>
                   </div>
                 )}
+                
+                <div className="flex items-center gap-2 border-l border-neutral-200 pl-2 sm:pl-4">
+                  <button
+                    onClick={() => window.print()}
+                    className="p-1.5 text-neutral-500 hover:text-neutral-900 bg-white border border-neutral-200 rounded shadow-sm flex items-center gap-1 text-xs font-medium"
+                    title="Print Layout"
+                  >
+                    <Printer className="w-4 h-4" />
+                    <span className="hidden sm:inline">Print</span>
+                  </button>
+                  {isFullscreen ? (
+                    <button
+                      onClick={() => setIsFullscreen(false)}
+                      className="p-1.5 text-red-500 hover:text-red-700 bg-red-50 border border-red-200 rounded shadow-sm flex items-center gap-1 text-xs font-medium"
+                    >
+                      <X className="w-4 h-4" />
+                      <span className="hidden sm:inline">Close</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setIsFullscreen(true)}
+                      className="p-1.5 text-neutral-500 hover:text-neutral-900 bg-white border border-neutral-200 rounded shadow-sm flex items-center gap-1 text-xs font-medium"
+                    >
+                      <Maximize className="w-4 h-4" />
+                      <span className="hidden sm:inline">Fullscreen</span>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-8">
+          <div id="printable-layout" className="flex flex-col lg:flex-row gap-8 flex-1 min-h-0">
             {/* Left: Tools & Sections */}
             <div className="w-full lg:w-72 shrink-0 space-y-6">
               {/* Core Tools */}
-              <div>
+              <div className="no-print">
                 <h4 className="text-xs font-semibold text-neutral-900 uppercase tracking-wider mb-3">
                   Tools
                 </h4>
