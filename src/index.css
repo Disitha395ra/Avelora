@@ -1,138 +1,59 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  /* --- Primary: Deep Indigo / Violet --- */
-  --color-brand-50:  #f3f0ff;
-  --color-brand-100: #ebe5ff;
-  --color-brand-200: #d9ceff;
-  --color-brand-300: #bfaaff;
-  --color-brand-400: #a07bfc;
-  --color-brand-500: #8b5cf6;
-  --color-brand-600: #7c3aed;
-  --color-brand-700: #6d28d9;
-  --color-brand-800: #5b21b6;
-  --color-brand-900: #4c1d95;
-
-  /* --- Accent: Warm Amber --- */
-  --color-accent-400: #fbbf24;
-  --color-accent-500: #f59e0b;
-  --color-accent-600: #d97706;
-
-  /* --- Neutrals: Cool Slate --- */
-  --color-neutral-50:  #f8fafc;
-  --color-neutral-100: #f1f5f9;
-  --color-neutral-200: #e2e8f0;
-  --color-neutral-300: #cbd5e1;
-  --color-neutral-400: #94a3b8;
-  --color-neutral-500: #64748b;
-  --color-neutral-600: #475569;
-  --color-neutral-700: #334155;
-  --color-neutral-800: #1e293b;
-  --color-neutral-900: #0f172a;
-
-  --font-serif: 'Playfair Display', Georgia, 'Times New Roman', serif;
-  --font-sans:  'DM Sans', ui-sans-serif, system-ui, sans-serif;
-
-  --radius-sm:  4px;
-  --radius-md:  6px;
-  --radius-lg:  10px;
-  --radius-xl:  14px;
-  --radius-2xl: 20px;
+  --color-brand-50: #f4f1e8;
+  --color-brand-100: #e9e3d4;
+  --color-brand-200: #d5c9ae;
+  --color-brand-300: #b8a580;
+  --color-brand-400: #9b865c;
+  --color-brand-500: #806a43;
+  --color-brand-600: #675334;
+  --color-brand-700: #51422b;
+  --color-brand-800: #3f3525;
+  --color-brand-900: #2b261d;
+  --color-accent-400: #d77c5d;
+  --color-accent-500: #bd6245;
+  --color-accent-600: #9f4e38;
+  --color-neutral-50: #f7f6f2;
+  --color-neutral-100: #eeece6;
+  --color-neutral-200: #dedbd2;
+  --color-neutral-300: #c4c0b5;
+  --color-neutral-400: #99958a;
+  --color-neutral-500: #716e65;
+  --color-neutral-600: #58554d;
+  --color-neutral-700: #3f3d37;
+  --color-neutral-800: #292823;
+  --color-neutral-900: #191815;
+  --font-serif: 'Newsreader', Georgia, serif;
+  --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 18px;
 }
 
-/* ─── Reset ─────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
-
-html {
-  scroll-behavior: smooth;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-body {
-  font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
-  background-color: #ffffff;
-  color: #0f172a;
-  line-height: 1.65;
-  font-size: 16px;
-}
-
-/* ─── Typography ─────────────────────────────────── */
-h1, h2, h3, h4 {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-weight: 700;
-  line-height: 1.15;
-  color: #0f172a;
-  letter-spacing: -0.01em;
-}
-
-h5, h6, label, button, .btn-text {
-  font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
-  font-weight: 600;
-}
-
-/* ─── Scrollbar ──────────────────────────────────── */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: #f1f5f9; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
-/* ─── Focus ──────────────────────────────────────── */
-*:focus-visible {
-  outline: 2px solid #8b5cf6;
-  outline-offset: 2px;
-}
-
-/* ─── Selection ──────────────────────────────────── */
-::selection {
-  background-color: #ebe5ff;
-  color: #0f172a;
-}
-
-/* ─── Utility: serif heading ─────────────────────── */
-.font-serif {
-  font-family: 'Playfair Display', Georgia, serif;
-}
-
-/* ─── Section dividers (editorial feel) ──────────── */
-.section-rule {
-  border: 0;
-  height: 1px;
-  background: linear-gradient(to right, transparent, #e2e8f0, transparent);
-}
-
-/* ─── Card hover lift ────────────────────────────── */
-.card-lift {
-  transition: transform 0.22s ease, box-shadow 0.22s ease;
-}
-.card-lift:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 16px 40px -8px rgba(15, 23, 42, 0.12);
-}
-
-/* ─── Seat map ───────────────────────────────────── */
+html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+body { margin: 0; font-family: 'Manrope', sans-serif; background: #f7f6f2; color: #292823; line-height: 1.6; font-size: 15px; }
+h1, h2, h3, h4 { font-family: 'Newsreader', Georgia, serif; font-weight: 600; line-height: 1.05; color: #191815; letter-spacing: -0.025em; }
+button, label, .btn-text { font-family: 'Manrope', sans-serif; }
+button { cursor: pointer; }
+*:focus-visible { outline: 2px solid #bd6245; outline-offset: 3px; }
+::selection { background: #d5c9ae; color: #191815; }
+.font-serif { font-family: 'Newsreader', Georgia, serif; }
+.section-rule { border: 0; height: 1px; background: #dedbd2; }
+.card-lift { transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+.card-lift:hover { transform: translateY(-4px); box-shadow: 0 18px 36px rgba(41,40,35,.10); }
+.nav-link { position: relative; }
+.nav-link::after { content: ''; position: absolute; left: 0; bottom: -7px; width: 0; height: 1px; background: #bd6245; transition: width .2s ease; }
+.nav-link:hover::after, .nav-link.active::after { width: 100%; }
 .seat-map-container { overflow: auto; -webkit-overflow-scrolling: touch; }
-@media (max-width: 768px) {
-  .seat-map-wrapper { overflow-x: auto; overflow-y: auto; }
-}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #eeece6; }
+::-webkit-scrollbar-thumb { background: #c4c0b5; border-radius: 3px; }
+@media (max-width: 768px) { .seat-map-wrapper { overflow-x: auto; overflow-y: auto; } }
+input::placeholder { color: #99958a; }
 
-/* ─── Nav underline hover ────────────────────────── */
-.nav-link {
-  position: relative;
-  padding-bottom: 2px;
-}
-.nav-link::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  bottom: -1px;
-  width: 0;
-  height: 2px;
-  background: #8b5cf6;
-  transition: width 0.2s ease;
-}
-.nav-link:hover::after,
-.nav-link.active::after {
-  width: 100%;
-}
